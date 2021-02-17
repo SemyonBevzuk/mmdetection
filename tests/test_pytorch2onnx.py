@@ -44,7 +44,7 @@ class ExportModelsTestCase(unittest.TestCase):
         if re.search(pattern, pytorch2onnx_output):
             pattern = 'The numerical values are the same between Pytorch and ONNX'
             if re.search(pattern, pytorch2onnx_output):
-                print('Successfully exported. The numerical values are the same between Pytorch and ONNX.')
+                print('Successfully exported. The numerical values are the same between PyTgitorch and ONNX.')
             else:
                 raise AssertionError('Unsuccessfully exported. The numerical values are different between Pytorch and ONNX.')
         else:
@@ -63,7 +63,7 @@ class ExportModelsTestCase(unittest.TestCase):
                     '--verify'],
                     capture_output=True, text=True, check=True)
             print(pytorch2onnx_output)
-            pytorch2onnx_output = pytorch2onnx_output.stdout.strip("\n")   
+            pytorch2onnx_output = pytorch2onnx_output.stdout.strip("\n")
         except CalledProcessError as ex:
             error = 'Test script failure.\n' + ex.stderr
         if error is not None:
@@ -79,7 +79,7 @@ class ExportModelsTestCase(unittest.TestCase):
                     'retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth'
         opset_version = '11'
 
-        #self.run_pytorch2onnx_test(model_name, config_path, snapshot_url, opset_version)
+        self.run_pytorch2onnx_test(model_name, config_path, snapshot_url, opset_version)
 
     def test_ssd(self):
         model_name = 'ssd'
@@ -89,7 +89,7 @@ class ExportModelsTestCase(unittest.TestCase):
                     'ssd300_coco_20200307-a92d2092.pth'
         opset_version = '11'
 
-        #self.run_pytorch2onnx_test(model_name, config_path, snapshot_url, opset_version)
+        self.run_pytorch2onnx_test(model_name, config_path, snapshot_url, opset_version)
 
     def test_yolov3(self):
         model_name = 'yolov3'
@@ -119,30 +119,11 @@ class ExportModelsTestCase(unittest.TestCase):
                     'faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
         opset_version = '11'
 
-        #self.run_pytorch2onnx_test(model_name, config_path, snapshot_url, opset_version)
+        self.run_pytorch2onnx_test(model_name, config_path, snapshot_url, opset_version)
 
 
 if __name__ == '__main__':
+    #tc = ExportModelsTestCase()
+    #tc.test_fsaf()
     #print_configuration_description()
     unittest.main()
-
-#run('conda activate ote-det && conda info --envs && conda deactivate', check=True, shell=True)
-'''
-ENVBIN = sys.exec_prefix
-
-# what binaries am I looking for that are installed in this env?
-BIN1 = os.path.join(ENVBIN, "bin", "ipython")
-BIN2 = os.path.join(ENVBIN, "bin", "python")
-BIN3 = os.path.join(ENVBIN, "bin", "aws")
-
-# let's make sure they exist, no typos.
-for bin in (BIN1, BIN2, BIN3):
-    assert os.path.exists(bin), "missing binary {} in env {}".format(bin, ENVBIN)
-
-# then use their full paths when making subprocess calls
-for bin in (BIN1, BIN2, BIN3):
-    cmd = ["which", bin]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    print(proc.communicate()[0].decode())
-#run('ls; cal')
-'''
