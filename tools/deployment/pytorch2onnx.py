@@ -34,7 +34,7 @@ def pytorch2onnx(config_path,
     orig_model = build_model_from_cfg(config_path, checkpoint_path)
     one_img, one_meta = preprocess_example_input(input_config)
     model, tensor_data = generate_inputs_and_wrap_model(
-        config_path, checkpoint_path, input_config)
+        config_path, checkpoint_path, input_config, opset_version)
     output_names = ['boxes']
     if model.with_bbox:
         output_names.append('labels')
@@ -45,13 +45,14 @@ def pytorch2onnx(config_path,
         model,
         tensor_data,
         output_file,
-        input_names=['input'],
+        input_names=['image'],
         output_names=output_names,
         export_params=True,
         keep_initializers_as_inputs=True,
         do_constant_folding=True,
         verbose=show,
-        opset_version=opset_version)
+        opset_version=opset_version,
+        strip_doc_string=False)
 
     model.forward = orig_model.forward
 
@@ -196,7 +197,7 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    assert args.opset_version == 11, 'MMDet only support opset 11 now'
+    assert args.opset_version >= 10, 'MMDet only support opset 11 now'
 
     if not args.input_img:
         args.input_img = osp.join(

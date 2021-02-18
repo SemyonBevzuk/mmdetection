@@ -6,7 +6,7 @@ import torch
 from mmcv.runner import load_checkpoint
 
 
-def generate_inputs_and_wrap_model(config_path, checkpoint_path, input_config):
+def generate_inputs_and_wrap_model(config_path, checkpoint_path, input_config, opset_version):
     """Prepare sample input and wrap model for ONNX export.
 
     The ONNX export API only accept args, and all inputs should be

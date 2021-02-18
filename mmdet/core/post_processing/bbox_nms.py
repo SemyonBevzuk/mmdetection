@@ -31,7 +31,7 @@ def multiclass_nms(multi_bboxes,
         tuple: (bboxes, labels, indices (optional)), tensors of shape (k, 5),
             (k), and (k). Labels are 0-based.
     """
-    num_classes = multi_scores.size(1) - 1
+    num_classes = int(multi_scores.size(1) - 1)
     # exclude background category
     if multi_bboxes.shape[1] > 4:
         bboxes = multi_bboxes.view(multi_scores.size(0), -1, 4)
@@ -39,7 +39,7 @@ def multiclass_nms(multi_bboxes,
         bboxes = multi_bboxes[:, None].expand(
             multi_scores.size(0), num_classes, 4)
 
-    scores = multi_scores[:, :-1]
+    scores = multi_scores[:, :num_classes]
 
     labels = torch.arange(num_classes, dtype=torch.long)
     labels = labels.view(1, -1).expand_as(scores)
@@ -48,6 +48,7 @@ def multiclass_nms(multi_bboxes,
     scores = scores.reshape(-1)
     labels = labels.reshape(-1)
 
+    nms_cfg['score_thr'] = score_thr
     # remove low scoring boxes
     valid_mask = scores > score_thr
     # multiply score_factor after threshold to preserve more bboxes, improve
@@ -58,9 +59,13 @@ def multiclass_nms(multi_bboxes,
             multi_scores.size(0), num_classes)
         score_factors = score_factors.reshape(-1)
         scores = scores * score_factors
-    inds = valid_mask.nonzero(as_tuple=False).squeeze(1)
-    bboxes, scores, labels = bboxes[inds], scores[inds], labels[inds]
-    if inds.numel() == 0:
+
+    if not torch.onnx.is_in_onnx_export():
+        valid_mask = scores > score_thr
+        inds = valid_mask.nonzero(as_tuple=False).squeeze(1)
+        bboxes, scores, labels = bboxes[inds], scores[inds], labels[inds]
+
+    if bboxes.numel() == 0:
         if torch.onnx.is_in_onnx_export():
             raise RuntimeError('[ONNX Error] Can not record NMS '
                                'as it has not been executed this time')
