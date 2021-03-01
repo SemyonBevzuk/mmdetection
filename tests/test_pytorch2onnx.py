@@ -124,6 +124,6 @@ class ExportModelsTestCase(unittest.TestCase):
 
 if __name__ == '__main__':
     #tc = ExportModelsTestCase()
-    #tc.test_fsaf()
+    #tc.test_faster_rcnn()
     #print_configuration_description()
     unittest.main()

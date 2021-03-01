@@ -45,7 +45,7 @@ def generate_inputs_and_wrap_model(config_path, checkpoint_path, input_config, o
 
     # pytorch has some bug in pytorch1.3, we have to fix it
     # by replacing these existing op
-    opset_version = 11
+    opset_version = 11 #opset_version
     # put the import within the function thus it will not cause import error
     # when not using this function
     try:
