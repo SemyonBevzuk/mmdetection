@@ -151,7 +151,7 @@ def pytorch2onnx(config_path,
         print('The numerical values are the same between Pytorch and ONNX')
 
 
-def parse_args():
+def parse_args(args=None):
     parser = argparse.ArgumentParser(
         description='Convert MMDetection models to ONNX')
     parser.add_argument('config', help='test config file path')
@@ -190,13 +190,11 @@ def parse_args():
         nargs='+',
         default=[58.395, 57.12, 57.375],
         help='variance value used for preprocess input data')
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     return args
 
 
-if __name__ == '__main__':
-    args = parse_args()
-
+def main(args):
     assert args.opset_version >= 10, 'MMDet only support opset 11 now'
 
     if not args.input_img:
@@ -229,3 +227,7 @@ if __name__ == '__main__':
         dataset=args.dataset,
         test_img=args.test_img,
         do_simplify=args.simplify)
+
+
+if __name__ == '__main__':
+    main(parse_args())
