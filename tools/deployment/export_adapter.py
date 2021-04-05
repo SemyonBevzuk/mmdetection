@@ -3,9 +3,6 @@ import argparse
 from pytorch2onnx import main as pytorch2onnx_main
 from pytorch2onnx import parse_args as pytorch2onnx_parse_args
 
-#import torch
-
-
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -23,7 +20,7 @@ def change_arange_to_opset9(g, *args):
 
 def register_openvino_symbolics(opset=11):
     from torch.onnx.symbolic_registry import register_op
-    register_op('arange', change_arange_to_opset9, '', opset)
+    #register_op('arange', change_arange_to_opset9, '', opset)
 
 
 if __name__ == '__main__':
