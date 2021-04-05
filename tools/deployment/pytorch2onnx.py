@@ -6,6 +6,7 @@ import numpy as np
 import onnx
 import onnxruntime as rt
 import torch
+from mmcv import DictAction
 
 from mmdet.core import (build_model_from_cfg, generate_inputs_and_wrap_model,
                         preprocess_example_input)
@@ -22,7 +23,8 @@ def pytorch2onnx(config_path,
                  normalize_cfg=None,
                  dataset='coco',
                  test_img=None,
-                 do_simplify=False):
+                 do_simplify=False,
+                 cfg_options=None):
 
     input_config = {
         'input_shape': input_shape,
@@ -31,10 +33,15 @@ def pytorch2onnx(config_path,
     }
 
     # prepare original model and meta for verifying the onnx model
-    orig_model = build_model_from_cfg(config_path, checkpoint_path)
+    orig_model = build_model_from_cfg(
+        config_path, checkpoint_path, cfg_options=cfg_options)
     one_img, one_meta = preprocess_example_input(input_config)
     model, tensor_data = generate_inputs_and_wrap_model(
+<<<<<<< HEAD
         config_path, checkpoint_path, input_config, opset_version)
+=======
+        config_path, checkpoint_path, input_config, cfg_options=cfg_options)
+>>>>>>> master
     output_names = ['boxes']
     if model.with_bbox:
         output_names.append('labels')
@@ -190,7 +197,17 @@ def parse_args(args=None):
         nargs='+',
         default=[58.395, 57.12, 57.375],
         help='variance value used for preprocess input data')
-    args = parser.parse_args(args)
+    parser.add_argument(
+        '--cfg-options',
+        nargs='+',
+        action=DictAction,
+        help='override some settings in the used config, the key-value pair '
+        'in xxx=yyy format will be merged into config file. If the value to '
+        'be overwritten is a list, it should be like key="[a,b]" or key=a,b '
+        'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
+        'Note that the quotation marks are necessary and that no white space '
+        'is allowed.')
+    args = parser.parse_args()
     return args
 
 
@@ -226,8 +243,13 @@ def main(args):
         normalize_cfg=normalize_cfg,
         dataset=args.dataset,
         test_img=args.test_img,
+<<<<<<< HEAD
         do_simplify=args.simplify)
 
 
 if __name__ == '__main__':
     main(parse_args())
+=======
+        do_simplify=args.simplify,
+        cfg_options=args.cfg_options)
+>>>>>>> master
