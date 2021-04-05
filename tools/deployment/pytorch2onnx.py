@@ -37,11 +37,7 @@ def pytorch2onnx(config_path,
         config_path, checkpoint_path, cfg_options=cfg_options)
     one_img, one_meta = preprocess_example_input(input_config)
     model, tensor_data = generate_inputs_and_wrap_model(
-<<<<<<< HEAD
-        config_path, checkpoint_path, input_config, opset_version)
-=======
-        config_path, checkpoint_path, input_config, cfg_options=cfg_options)
->>>>>>> master
+        config_path, checkpoint_path, input_config, opset_version, cfg_options=cfg_options)
     output_names = ['boxes']
     if model.with_bbox:
         output_names.append('labels')
@@ -243,13 +239,9 @@ def main(args):
         normalize_cfg=normalize_cfg,
         dataset=args.dataset,
         test_img=args.test_img,
-<<<<<<< HEAD
-        do_simplify=args.simplify)
+        do_simplify=args.simplify,
+        cfg_options=args.cfg_options)
 
 
 if __name__ == '__main__':
     main(parse_args())
-=======
-        do_simplify=args.simplify,
-        cfg_options=args.cfg_options)
->>>>>>> master
