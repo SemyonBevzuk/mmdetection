@@ -48,7 +48,7 @@ def multiclass_nms(multi_bboxes,
     scores = scores.reshape(-1)
     labels = labels.reshape(-1)
 
-    nms_cfg['score_thr'] = score_thr
+    nms_cfg['score_threshold'] = score_thr
     nms_cfg['max_num'] = max_num if max_num > 0 else boxes.shape[0]
     # remove low scoring boxes
     if not torch.onnx.is_in_onnx_export():
@@ -85,10 +85,6 @@ def multiclass_nms(multi_bboxes,
             return bboxes, labels
 
     dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)
-
-    if max_num > 0:
-        dets = dets[:max_num]
-        keep = keep[:max_num]
 
     if return_inds:
         return dets, labels[keep], keep
