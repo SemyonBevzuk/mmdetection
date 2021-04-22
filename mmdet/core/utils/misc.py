@@ -59,3 +59,70 @@ def mask2ndarray(mask):
     elif not isinstance(mask, np.ndarray):
         raise TypeError(f'Unsupported {type(mask)} data type')
     return mask
+
+
+def dummy_pad(x, padding):
+
+    class DummyPad(torch.autograd.Function):
+
+        @staticmethod
+        def forward(ctx, x, padding):
+            return torch.nn.functional.pad(x, padding)
+
+        @staticmethod
+        def backward(ctx, grad_output):
+            grad_input = None
+            if ctx.needs_input_grad[0]:
+                grad_output = grad_input
+            return grad_output, None
+
+        @staticmethod
+        def symbolic(g, x, padding):
+            return g.op('Identity', x)
+
+    return DummyPad.apply(x, padding)
+
+
+def arange(start=0,
+           end=None,
+           step=1,
+           out=None,
+           dtype=None,
+           layout=torch.strided,
+           device=None,
+           requires_grad=False):
+    if torch.onnx.is_in_onnx_export():
+        if end is None:
+            raise ValueError('End of range must be defined.')
+        assert out is None
+        assert layout == torch.strided
+
+        start_tensor = torch.as_tensor(start, dtype=torch.long, device=device)
+        end_tensor = torch.as_tensor(end, dtype=torch.long, device=device)
+        n = end_tensor - start_tensor
+
+        if isinstance(step, torch.Tensor):
+            n = (n + step - 1) // step
+
+        result = torch.ones(n, layout=layout, device=device)\
+            .nonzero().view(-1) + start_tensor
+
+        if isinstance(step, torch.Tensor) or step > 1:
+            result = result.view(-1, step)\
+                .index_select(1, torch.zeros(1, dtype=torch.long))\
+                .view(-1)
+
+        if dtype is not None:
+            result = result.to(dtype)
+
+        return result
+    else:
+        return torch.arange(
+            start=start,
+            end=end,
+            step=step,
+            out=out,
+            dtype=dtype,
+            layout=layout,
+            device=device,
+            requires_grad=requires_grad)

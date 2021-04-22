@@ -8,6 +8,7 @@ from mmcv.runner import auto_fp16, force_fp32
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import mask_target
+from mmdet.core.utils.misc import arange
 from mmdet.models.builder import HEADS, build_loss
 
 BYTES_PER_FLOAT = 4
@@ -215,6 +216,12 @@ class FCNMaskHead(nn.Module):
             >>> assert len(encoded_masks) == C
             >>> assert sum(list(map(len, encoded_masks))) == N
         """
+
+        segm_result = mask_pred[
+            arange(end=det_labels.shape[0], device=mask_pred.device),
+            det_labels].sigmoid()
+        return segm_result
+
         if isinstance(mask_pred, torch.Tensor):
             mask_pred = mask_pred.sigmoid()
         else:

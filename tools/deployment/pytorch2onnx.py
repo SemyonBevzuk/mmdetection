@@ -48,13 +48,14 @@ def pytorch2onnx(config_path,
         model,
         tensor_data,
         output_file,
-        input_names=['input'],
+        input_names=['image'],
         output_names=output_names,
         export_params=True,
         keep_initializers_as_inputs=True,
         do_constant_folding=True,
         verbose=show,
-        opset_version=opset_version)
+        opset_version=opset_version,
+        strip_doc_string=False)
 
     model.forward = orig_model.forward
 
@@ -123,7 +124,8 @@ def pytorch2onnx(config_path,
             det_bboxes, det_labels = onnx_outputs[:2]
             onnx_results = bbox2result(det_bboxes, det_labels, num_classes)
             if with_mask:
-                segm_results = onnx_outputs[2].squeeze(1)
+                segm_results = onnx_outputs[
+                    2]  # segm_results = onnx_outputs[2].squeeze(1)
                 cls_segms = [[] for _ in range(num_classes)]
                 for i in range(det_bboxes.shape[0]):
                     cls_segms[det_labels[i]].append(segm_results[i])
