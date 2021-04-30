@@ -440,6 +440,7 @@ class ATSSHead(AnchorHead):
 
                 max_scores, _ = (scores * centerness[..., None]).max(-1)
                 _, topk_inds = max_scores.topk(nms_pre)
+                topk_inds = topk_inds.to(torch.int64)
                 anchors = anchors[topk_inds, :]
                 batch_inds = torch.arange(batch_size).view(
                     -1, 1).expand_as(topk_inds).long()
@@ -450,7 +451,7 @@ class ATSSHead(AnchorHead):
                 anchors = anchors.expand_as(bbox_pred)
 
             bboxes = self.bbox_coder.decode(
-                anchors, bbox_pred, max_shape=img_shapes)
+                anchors, bbox_pred, max_shape=torch.tensor(img_shapes[0][:2]))
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_centerness.append(centerness)

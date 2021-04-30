@@ -1,6 +1,7 @@
 import argparse
 import os.path as osp
 import warnings
+from functools import wraps
 
 import numpy as np
 import onnx
@@ -11,6 +12,17 @@ from mmcv import DictAction
 from mmdet.core.export import (build_model_from_cfg,
                                generate_inputs_and_wrap_model,
                                preprocess_example_input)
+
+
+def topk_inds_to_int64(function):
+
+    @wraps(function)
+    def wrapper(*args, **kwargs):
+        topk_values, topk_inds = function(*args, **kwargs)
+        topk_inds = topk_inds.to(dtype=torch.int64)
+        return topk_values, topk_inds
+
+    return wrapper
 
 
 def pytorch2onnx(config_path,
@@ -27,6 +39,8 @@ def pytorch2onnx(config_path,
                  do_simplify=False,
                  cfg_options=None,
                  dynamic_export=None):
+
+    #torch.Tensor.topk = topk_inds_to_int64(torch.Tensor.topk)
 
     input_config = {
         'input_shape': input_shape,
@@ -67,14 +81,15 @@ def pytorch2onnx(config_path,
         model,
         tensor_data,
         output_file,
-        input_names=['input'],
+        input_names=['image'],
         output_names=output_names,
         export_params=True,
         keep_initializers_as_inputs=True,
         do_constant_folding=True,
         verbose=show,
         opset_version=opset_version,
-        dynamic_axes=dynamic_axes)
+        dynamic_axes=dynamic_axes,
+        strip_doc_string=False)
 
     model.forward = orig_model.forward
 
