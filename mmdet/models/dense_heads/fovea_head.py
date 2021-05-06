@@ -318,14 +318,14 @@ class FoveaHead(AnchorFreeHead):
             nms_pre = cfg.get('nms_pre', -1)
             if (nms_pre > 0) and (scores.shape[0] > nms_pre):
                 max_scores, _ = scores.max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
+                _, topk_inds = max_scores.topk(nms_pre) # [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running TopK node. Name:'TopK_651' Status Message: k argument [1000] should not be greater than specified axis dim value [850]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
                 y = y[topk_inds]
                 x = x[topk_inds]
-            x1 = (stride * x - base_len * bbox_pred[:, 0]). \
+            x1 = (stride * x + (-base_len) * bbox_pred[:, 0]). \
                 clamp(min=0, max=img_shape[1] - 1)
-            y1 = (stride * y - base_len * bbox_pred[:, 1]). \
+            y1 = (stride * y + (-base_len) * bbox_pred[:, 1]). \
                 clamp(min=0, max=img_shape[0] - 1)
             x2 = (stride * x + base_len * bbox_pred[:, 2]). \
                 clamp(min=0, max=img_shape[1] - 1)
