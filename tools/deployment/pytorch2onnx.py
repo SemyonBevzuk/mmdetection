@@ -57,10 +57,11 @@ def pytorch2onnx(config_path,
     output_names = ['dets', 'labels']
     if model.with_mask:
         output_names.append('masks')
+    input_name = 'image'
     dynamic_axes = None
     if dynamic_export:
         dynamic_axes = {
-            'input': {
+            input_name: {
                 0: 'batch',
                 2: 'width',
                 3: 'height'
@@ -81,7 +82,7 @@ def pytorch2onnx(config_path,
         model,
         tensor_data,
         output_file,
-        input_names=['image'],
+        input_names=[input_name],
         output_names=output_names,
         export_params=True,
         keep_initializers_as_inputs=True,
