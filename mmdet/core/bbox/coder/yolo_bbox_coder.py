@@ -76,8 +76,14 @@ class YOLOBBoxCoder(BaseBBoxCoder):
         w = bboxes[..., 2] - bboxes[..., 0]
         h = bboxes[..., 3] - bboxes[..., 1]
         # Get outputs x, y
-        x_center_pred = (pred_bboxes[..., 0] - 0.5) * stride + x_center
-        y_center_pred = (pred_bboxes[..., 1] - 0.5) * stride + y_center
+        # Error when reshaping in OpenVINO
+        # x_center_pred = (pred_bboxes[..., 0] - 0.5) * stride + x_center
+        # y_center_pred = (pred_bboxes[..., 1] - 0.5) * stride + y_center
+        # Fix
+        x_center_pred = pred_bboxes[..., 0] * stride + \
+            (stride * (-0.5) + x_center)
+        y_center_pred = pred_bboxes[..., 1] * stride + \
+            (stride * (-0.5) + y_center)
         w_pred = torch.exp(pred_bboxes[..., 2]) * w
         h_pred = torch.exp(pred_bboxes[..., 3]) * h
 
