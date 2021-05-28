@@ -308,7 +308,8 @@ class MaskTestMixin(object):
                 mask_pred, det_bboxes, det_labels, self.test_cfg, max_shape,
                 scale_factors[0], rescale)
             segm_results = segm_results.reshape(batch_size, num_det,
-                                                max_shape[0], max_shape[1])
+                                                segm_results.shape[1],
+                                                segm_results.shape[2])
             return segm_results
         # Recover the batch dimension
         mask_preds = mask_pred.reshape(batch_size, num_proposals_per_img,
