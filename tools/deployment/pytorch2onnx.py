@@ -40,7 +40,7 @@ def pytorch2onnx(config_path,
                  cfg_options=None,
                  dynamic_export=None):
 
-    #torch.Tensor.topk = topk_inds_to_int64(torch.Tensor.topk)
+    torch.Tensor.topk = topk_inds_to_int64(torch.Tensor.topk)
 
     input_config = {
         'input_shape': input_shape,

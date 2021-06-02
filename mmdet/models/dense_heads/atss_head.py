@@ -443,7 +443,6 @@ class ATSSHead(AnchorHead):
 
                 max_scores, _ = (scores * centerness[..., None]).max(-1)
                 _, topk_inds = max_scores.topk(nms_pre)
-                topk_inds = topk_inds.to(torch.int64)
                 anchors = anchors[topk_inds, :]
                 batch_inds = torch.arange(batch_size).view(
                     -1, 1).expand_as(topk_inds).long()
@@ -474,7 +473,6 @@ class ATSSHead(AnchorHead):
                 batch_mlvl_centerness.unsqueeze(2).expand_as(batch_mlvl_scores)
             ).max(-1)
             _, topk_inds = batch_mlvl_scores.topk(deploy_nms_pre)
-            topk_inds = topk_inds.to(torch.int64)
             batch_inds = torch.arange(batch_size).view(-1,
                                                        1).expand_as(topk_inds)
             batch_mlvl_scores = batch_mlvl_scores[batch_inds, topk_inds, :]

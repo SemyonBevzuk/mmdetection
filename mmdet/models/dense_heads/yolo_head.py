@@ -300,7 +300,6 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             nms_pre = get_k_for_topk(nms_pre_tensor, bbox_pred.shape[1])
             if nms_pre > 0:
                 _, topk_inds = conf_pred.topk(nms_pre)
-                topk_inds = topk_inds.to(torch.int64)
                 batch_inds = torch.arange(batch_size).view(
                     -1, 1).expand_as(topk_inds).long()
                 # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
