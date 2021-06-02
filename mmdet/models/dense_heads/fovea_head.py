@@ -347,6 +347,10 @@ class FoveaHead(AnchorFreeHead):
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
         det_scores = torch.cat([det_scores, padding], dim=1)
+        if 'max_per_img' in cfg:
+            cfg.nms.max_num = cfg.max_per_img
+        if 'score_thr' in cfg:
+            cfg.nms.score_threshold = cfg.score_thr
         det_bboxes, det_labels = multiclass_nms(det_bboxes, det_scores,
                                                 cfg.score_thr, cfg.nms,
                                                 cfg.max_per_img)

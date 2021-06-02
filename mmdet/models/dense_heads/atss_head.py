@@ -486,6 +486,10 @@ class ATSSHead(AnchorHead):
         batch_mlvl_scores = torch.cat([batch_mlvl_scores, padding], dim=-1)
 
         if with_nms:
+            if 'max_per_img' in cfg:
+                cfg.nms.max_num = cfg.max_per_img
+            if 'score_thr' in cfg:
+                cfg.nms.score_threshold = cfg.score_thr
             det_results = []
             for (mlvl_bboxes, mlvl_scores,
                  mlvl_centerness) in zip(batch_mlvl_bboxes, batch_mlvl_scores,
