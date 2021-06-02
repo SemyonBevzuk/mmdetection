@@ -366,6 +366,10 @@ class ATSSHead(AnchorHead):
                                        centerness_pred_list, mlvl_anchors,
                                        img_shapes, scale_factors, cfg, rescale,
                                        with_nms)
+        # Because in onnx_export, after calling self.bbox_head.get_bboxes,
+        # only two output values are expected: det_bboxes, det_labels
+        if torch.onnx.is_in_onnx_export():
+            return result_list[0]
         return result_list
 
     def _get_bboxes(self,
