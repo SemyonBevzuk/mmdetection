@@ -665,7 +665,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                     max_scores, _ = scores[..., :-1].max(-1)
 
                 _, topk_inds = max_scores.topk(nms_pre)
-                #topk_inds.to(torch.int64)
                 batch_inds = torch.arange(batch_size).view(
                     -1, 1).expand_as(topk_inds)
                 anchors = anchors[batch_inds, topk_inds, :]
