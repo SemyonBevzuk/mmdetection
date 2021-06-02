@@ -288,11 +288,16 @@ class FoveaHead(AnchorFreeHead):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            det_bboxes = self._get_bboxes_single(cls_score_list,
+            det_bboxes, det_labels = self._get_bboxes_single(cls_score_list,
                                                  bbox_pred_list, featmap_sizes,
                                                  points, img_shape,
                                                  scale_factor, cfg, rescale)
-            result_list.append(det_bboxes)
+            result_list.append((det_bboxes, det_labels))
+        
+        # Because in onnx_export, after calling self.bbox_head.get_bboxes,
+        # only two output values are expected: det_bboxes, det_labels
+        if torch.onnx.is_in_onnx_export():
+            return result_list[0]
         return result_list
 
     def _get_bboxes_single(self,
