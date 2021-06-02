@@ -334,8 +334,11 @@ class FCNMaskHead(BaseModule):
         if not self.class_agnostic:
             box_inds = torch.arange(mask_pred.shape[0])
             mask_pred = mask_pred[box_inds, labels][:, None]
-        masks, _ = _do_paste_mask(
-            mask_pred, bboxes, img_h, img_w, skip_empty=False)
+        if self.rescale_mask_to_input_shape:
+            masks, _ = _do_paste_mask(
+                mask_pred, bboxes, img_h, img_w, skip_empty=False)
+        else:
+            masks = mask_pred.squeeze()
         if threshold >= 0:
             masks = (masks >= threshold).to(dtype=torch.bool)
         return masks
