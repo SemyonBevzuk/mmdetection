@@ -320,7 +320,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         segm_results = self.mask_head.onnx_export(mask_pred, det_bboxes,
                                                   det_labels, self.test_cfg,
                                                   max_shape)
-        segm_results = segm_results.reshape(batch_size, num_det, 
+        segm_results = segm_results.reshape(batch_size, num_det,
                                             segm_results.shape[1],
                                             segm_results.shape[2])
         return segm_results
