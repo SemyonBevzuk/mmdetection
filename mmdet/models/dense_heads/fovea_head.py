@@ -288,15 +288,15 @@ class FoveaHead(AnchorFreeHead):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            det_bboxes, det_labels = self._get_bboxes_single(cls_score_list,
+            det_result = self._get_bboxes_single(cls_score_list,
                                                  bbox_pred_list, featmap_sizes,
                                                  points, img_shape,
                                                  scale_factor, cfg, rescale)
-            result_list.append((det_bboxes, det_labels))
-        
-        # Because in onnx_export, after calling self.bbox_head.get_bboxes,
-        # only two output values are expected: det_bboxes, det_labels
+            result_list.append(det_result)
+
         if torch.onnx.is_in_onnx_export():
+            # Because in onnx_export, after calling self.bbox_head.get_bboxes,
+            # only two output values are expected: det_bboxes, det_labels
             return result_list[0]
         return result_list
 
@@ -323,7 +323,7 @@ class FoveaHead(AnchorFreeHead):
             nms_pre = cfg.get('nms_pre', -1)
             if (nms_pre > 0) and (scores.shape[0] > nms_pre):
                 max_scores, _ = scores.max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre) # [ONNXRuntimeError] : 1 : FAIL : Non-zero status code returned while running TopK node. Name:'TopK_651' Status Message: k argument [1000] should not be greater than specified axis dim value [850]
+                _, topk_inds = max_scores.topk(nms_pre)
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
                 y = y[topk_inds]
@@ -347,10 +347,6 @@ class FoveaHead(AnchorFreeHead):
         # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
         # BG cat_id: num_class
         det_scores = torch.cat([det_scores, padding], dim=1)
-        if 'max_per_img' in cfg:
-            cfg.nms.max_num = cfg.max_per_img
-        if 'score_thr' in cfg:
-            cfg.nms.score_threshold = cfg.score_thr
         det_bboxes, det_labels = multiclass_nms(det_bboxes, det_scores,
                                                 cfg.score_thr, cfg.nms,
                                                 cfg.max_per_img)

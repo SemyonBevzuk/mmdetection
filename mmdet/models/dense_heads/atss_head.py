@@ -366,9 +366,10 @@ class ATSSHead(AnchorHead):
                                        centerness_pred_list, mlvl_anchors,
                                        img_shapes, scale_factors, cfg, rescale,
                                        with_nms)
-        # Because in onnx_export, after calling self.bbox_head.get_bboxes,
-        # only two output values are expected: det_bboxes, det_labels
+
         if torch.onnx.is_in_onnx_export():
+            # Because in onnx_export, after calling self.bbox_head.get_bboxes,
+            # only two output values are expected: det_bboxes, det_labels
             return result_list[0]
         return result_list
 
@@ -486,10 +487,6 @@ class ATSSHead(AnchorHead):
         batch_mlvl_scores = torch.cat([batch_mlvl_scores, padding], dim=-1)
 
         if with_nms:
-            if 'max_per_img' in cfg:
-                cfg.nms.max_num = cfg.max_per_img
-            if 'score_thr' in cfg:
-                cfg.nms.score_threshold = cfg.score_thr
             det_results = []
             for (mlvl_bboxes, mlvl_scores,
                  mlvl_centerness) in zip(batch_mlvl_bboxes, batch_mlvl_scores,
