@@ -31,7 +31,7 @@ def multiclass_nms(multi_bboxes,
         tuple: (dets, labels, indices (optional)), tensors of shape (k, 5),
             (k), and (k). Dets are boxes with scores. Labels are 0-based.
     """
-    num_classes = multi_scores.size(1) - 1
+    num_classes = int(multi_scores.size(1) - 1)
     # exclude background category
     if multi_bboxes.shape[1] > 4:
         bboxes = multi_bboxes.view(multi_scores.size(0), -1, 4)
@@ -39,7 +39,7 @@ def multiclass_nms(multi_bboxes,
         bboxes = multi_bboxes[:, None].expand(
             multi_scores.size(0), num_classes, 4)
 
-    scores = multi_scores[:, :-1]
+    scores = multi_scores[:, :num_classes]
 
     labels = torch.arange(num_classes, dtype=torch.long)
     labels = labels.view(1, -1).expand_as(scores)
@@ -82,11 +82,10 @@ def multiclass_nms(multi_bboxes,
         else:
             return dets, labels
 
-    dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)
+    nms_cfg['score_threshold'] = score_thr if score_factors is None else 0
+    nms_cfg['max_num'] = max_num
 
-    if max_num > 0:
-        dets = dets[:max_num]
-        keep = keep[:max_num]
+    dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)
 
     if return_inds:
         return dets, labels[keep], keep

@@ -182,7 +182,7 @@ class RPNHead(AnchorHead):
 
             dets, keep = batched_nms(mlvl_proposals, mlvl_scores, mlvl_ids,
                                      cfg.nms)
-            result_list.append(dets[:cfg.max_per_img])
+            result_list.append(dets)
         return result_list
 
     # TODO: waiting for refactor the anchor_head and anchor_free head
