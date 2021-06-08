@@ -41,9 +41,10 @@ def fix_topk_inds_output_type_problem():
 
 def fix_foveabox_problem():
     """
-    [MO] Incorrect constant in the IR (foveabox) MO saves incorrect
-    constants in the graphics, which causes an error when reshaping the model
-    in IE.
+    [MO] Incorrect constant in the IR (foveabox)
+
+    MO saves incorrect constants in the graphics,
+    which causes an error when reshaping the model in IE.
     """
     from mmdet.core import multiclass_nms
 
@@ -103,6 +104,54 @@ def fix_foveabox_problem():
     FoveaHead._get_bboxes_single = _get_bboxes_single
 
 
+def fix_yolov3_problem():
+    """
+    [MO] Incorrect constant in the IR (yolov3)
+
+    MO saves incorrect constants in the graphics,
+    which causes an error when reshaping the model in IE.
+    """
+
+    def decode(self, bboxes, pred_bboxes, stride):
+        """Apply transformation `pred_bboxes` to `boxes`.
+
+        Args:
+            boxes (torch.Tensor): Basic boxes, e.g. anchors.
+            pred_bboxes (torch.Tensor): Encoded boxes with shape
+            stride (torch.Tensor | int): Strides of bboxes.
+
+        Returns:
+            torch.Tensor: Decoded boxes.
+        """
+        assert pred_bboxes.size(0) == bboxes.size(0)
+        assert pred_bboxes.size(-1) == bboxes.size(-1) == 4
+        x_center = (bboxes[..., 0] + bboxes[..., 2]) * 0.5
+        y_center = (bboxes[..., 1] + bboxes[..., 3]) * 0.5
+        w = bboxes[..., 2] - bboxes[..., 0]
+        h = bboxes[..., 3] - bboxes[..., 1]
+        # Get outputs x, y
+        # Error when reshaping in OpenVINO
+        # x_center_pred = (pred_bboxes[..., 0] - 0.5) * stride + x_center
+        # y_center_pred = (pred_bboxes[..., 1] - 0.5) * stride + y_center
+        # Fix
+        x_center_pred = pred_bboxes[..., 0] * stride + \
+            (stride * (-0.5) + x_center)
+        y_center_pred = pred_bboxes[..., 1] * stride + \
+            (stride * (-0.5) + y_center)
+        w_pred = torch.exp(pred_bboxes[..., 2]) * w
+        h_pred = torch.exp(pred_bboxes[..., 3]) * h
+
+        decoded_bboxes = torch.stack(
+            (x_center_pred - w_pred / 2, y_center_pred - h_pred / 2,
+             x_center_pred + w_pred / 2, y_center_pred + h_pred / 2),
+            dim=-1)
+        return decoded_bboxes
+
+    from mmdet.core.bbox.coder.yolo_bbox_coder import YOLOBBoxCoder
+    YOLOBBoxCoder.decode = decode
+
+
 def apply_all_fixes():
     fix_topk_inds_output_type_problem()
     fix_foveabox_problem()
+    fix_yolov3_problem()
