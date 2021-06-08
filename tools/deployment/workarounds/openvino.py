@@ -19,7 +19,8 @@ def rename_input_onnx(onnx_model_path, old_name, new_name):
 
 
 def fix_topk_inds_output_type_problem():
-    """[MO] Incorrect TopK transformation.
+    """
+    [MO] Incorrect TopK transformation.
 
     TopK after MO returns indices with type int32, which can be added to
     tensors with type int64.
@@ -39,9 +40,11 @@ def fix_topk_inds_output_type_problem():
 
 
 def fix_foveabox_problem():
-    """[MO] Incorrect constant in the IR (foveabox) MO saves incorrect
+    """
+    [MO] Incorrect constant in the IR (foveabox) MO saves incorrect
     constants in the graphics, which causes an error when reshaping the model
-    in IE."""
+    in IE.
+    """
     from mmdet.core import multiclass_nms
 
     def _get_bboxes_single(self,
