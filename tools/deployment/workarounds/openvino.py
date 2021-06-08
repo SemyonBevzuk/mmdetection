@@ -1,6 +1,7 @@
-import torch
-import onnx
 from functools import wraps
+
+import onnx
+import torch
 
 
 def rename_input_onnx(onnx_model_path, old_name, new_name):
@@ -18,12 +19,14 @@ def rename_input_onnx(onnx_model_path, old_name, new_name):
 
 
 def fix_topk_inds_output_type_problem():
-    '''
-    [MO] Incorrect TopK transformation.
-    TopK after MO returns indices with type int32,
-    which can be added to tensors with type int64.
-    '''
+    """[MO] Incorrect TopK transformation.
+
+    TopK after MO returns indices with type int32, which can be added to
+    tensors with type int64.
+    """
+
     def topk_inds_to_int64(function):
+
         @wraps(function)
         def wrapper(*args, **kwargs):
             topk_values, topk_inds = function(*args, **kwargs)
@@ -31,15 +34,14 @@ def fix_topk_inds_output_type_problem():
             return topk_values, topk_inds
 
         return wrapper
+
     torch.Tensor.topk = topk_inds_to_int64(torch.Tensor.topk)
 
 
 def fix_foveabox_problem():
-    '''
-    [MO] Incorrect constant in the IR (foveabox)
-    MO saves incorrect constants in the graphics,
-    which causes an error when reshaping the model in IE.
-    '''
+    """[MO] Incorrect constant in the IR (foveabox) MO saves incorrect
+    constants in the graphics, which causes an error when reshaping the model
+    in IE."""
     from mmdet.core import multiclass_nms
 
     def _get_bboxes_single(self,
@@ -98,18 +100,6 @@ def fix_foveabox_problem():
     FoveaHead._get_bboxes_single = _get_bboxes_single
 
 
-def fix_foveabox_get_bboxes_output():
-    '''
-    Because in SingleStageDetector.onnx_export,
-    after calling self.bbox_head.get_bboxes,
-    only two output values are expected: det_bboxes, det_labels
-    '''
-    # from mmdet.ops.nms import NMSop
-    # original_forward = NMSop.forward
-    pass
-
-
 def apply_all_fixes():
     fix_topk_inds_output_type_problem()
     fix_foveabox_problem()
-    fix_foveabox_get_bboxes_output()

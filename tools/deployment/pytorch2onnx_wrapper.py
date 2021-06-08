@@ -4,8 +4,11 @@ import argparse
 def parse_args_wrapper():
     parser = argparse.ArgumentParser(
         description='pytorch2onnx wrapper to handle additional parameters.')
-    parser.add_argument('--target', choices=['onnx', 'openvino'],
-                        default='openvino', help='Target model format.')
+    parser.add_argument(
+        '--target',
+        choices=['onnx', 'openvino'],
+        default='openvino',
+        help='Target model format.')
 
     args, other_args_list = parser.parse_known_args()
     return args, other_args_list
@@ -28,6 +31,8 @@ if __name__ == '__main__':
 
     if wrapper_args.target == 'openvino':
         from workarounds.openvino import apply_all_fixes
+        apply_all_fixes()
+        from workarounds.mmdetection import apply_all_fixes
         apply_all_fixes()
 
     run_pytorch2onnx(pytorch2onnx_args)
