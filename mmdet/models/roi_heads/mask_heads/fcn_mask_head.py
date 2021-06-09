@@ -342,7 +342,7 @@ class FCNMaskHead(BaseModule):
             masks, _ = _do_paste_mask(
                 mask_pred, bboxes, img_h, img_w, skip_empty=False)
         else:
-            masks = mask_pred.squeeze()
+            masks = mask_pred.squeeze(dim=1)
         if threshold >= 0:
             masks = (masks >= threshold).to(dtype=torch.bool)
         return masks
