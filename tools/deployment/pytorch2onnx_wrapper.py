@@ -1,7 +1,7 @@
 import argparse
 
 
-def parse_args_wrapper():
+def parse_args_wrapper(args_list=None):
     parser = argparse.ArgumentParser(
         description='pytorch2onnx wrapper to handle additional parameters.')
     parser.add_argument(
@@ -16,7 +16,7 @@ def parse_args_wrapper():
         'from the exported model, which information about the stack trace.'
     )
 
-    args, other_args_list = parser.parse_known_args()
+    args, other_args_list = parser.parse_known_args(args=args_list)
     return args, other_args_list
 
 
