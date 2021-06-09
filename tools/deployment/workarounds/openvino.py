@@ -19,7 +19,8 @@ def rename_input_onnx(onnx_model_path, old_name, new_name):
 
 
 def fix_topk_inds_output_type_problem():
-    """
+    """Fixed in OpenVINO 2021.4.
+
     [MO] Incorrect TopK transformation.
 
     TopK after MO returns indices with type int32, which can be added to
@@ -40,11 +41,10 @@ def fix_topk_inds_output_type_problem():
 
 
 def fix_foveabox_problem():
-    """
-    [MO] Incorrect constant in the IR (foveabox)
+    """[MO] Incorrect constant in the IR (foveabox)
 
-    MO saves incorrect constants in the graphics,
-    which causes an error when reshaping the model in IE.
+    MO saves incorrect constants in the graphics, which causes an error when
+    reshaping the model in IE.
     """
     from mmdet.core import multiclass_nms
 
@@ -105,11 +105,10 @@ def fix_foveabox_problem():
 
 
 def fix_yolov3_problem():
-    """
-    [MO] Incorrect constant in the IR (yolov3)
+    """[MO] Incorrect constant in the IR (yolov3)
 
-    MO saves incorrect constants in the graphics,
-    which causes an error when reshaping the model in IE.
+    MO saves incorrect constants in the graphics, which causes an error when
+    reshaping the model in IE.
     """
 
     def decode(self, bboxes, pred_bboxes, stride):

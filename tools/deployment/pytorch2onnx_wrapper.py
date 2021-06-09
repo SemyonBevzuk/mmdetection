@@ -9,6 +9,12 @@ def parse_args_wrapper():
         choices=['onnx', 'openvino'],
         default='openvino',
         help='Target model format.')
+    parser.add_argument(
+        '--not_strip_doc_string',
+        action='store_true',
+        help='If is, does not strip the field “doc_string”'
+        'from the exported model, which information about the stack trace.'
+    )
 
     args, other_args_list = parser.parse_known_args()
     return args, other_args_list
@@ -26,6 +32,12 @@ def run_pytorch2onnx(args):
     main(args)
 
 
+def update_strip_doc_string():
+    from torch import onnx
+    from workarounds.mmdetection import update_default_arg_value
+    update_default_arg_value(onnx.export, 'strip_doc_string', False)
+
+
 if __name__ == '__main__':
     wrapper_args, pytorch2onnx_args = parse_args()
 
@@ -34,6 +46,9 @@ if __name__ == '__main__':
         apply_all_fixes()
         from workarounds.mmdetection import apply_all_fixes
         apply_all_fixes()
+
+    if wrapper_args.not_strip_doc_string:
+        update_strip_doc_string()
 
     run_pytorch2onnx(pytorch2onnx_args)
 
