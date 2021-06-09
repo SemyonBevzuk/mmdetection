@@ -1,14 +1,10 @@
-from functools import wraps
+import importlib
+from functools import partial, wraps
 
 
-def update_default_arg_value(func, arg_name, arg_value):
-    defaults = func.__defaults__
-    varnames = func.__code__.co_varnames
-    arg_inx = varnames.index(arg_name)
-    arg_inx_defaults = arg_inx - (len(varnames) - len(defaults)) + 1
-    new_defaults = defaults[:arg_inx_defaults] + (
-        arg_value, ) + defaults[arg_inx_defaults + 1:]
-    func.__defaults__ = new_defaults
+def update_default_args_value(func, **updated_args):
+    new_func = partial(func, **updated_args)
+    return new_func
 
 
 def fix_get_bboxes_output():
@@ -25,11 +21,11 @@ def fix_get_bboxes_output():
 
         return wrapper
 
-    from mmdet.models.dense_heads.fovea_head import FoveaHead
-    from mmdet.models.dense_heads.atss_head import ATSSHead
-    heads = [FoveaHead, ATSSHead]
-    for head in heads:
-        head.get_bboxes = crop_output(head.get_bboxes)
+    dense_heads = importlib.import_module('mmdet.models.dense_heads')
+    heads = ['FoveaHead', 'ATSSHead']
+    for head_name in heads:
+        head_class = getattr(dense_heads, head_name)
+        head_class.get_bboxes = crop_output(head_class.get_bboxes)
 
 
 def apply_all_fixes():
