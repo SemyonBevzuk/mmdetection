@@ -2,10 +2,8 @@ from functools import wraps
 
 import torch
 import torch.onnx.symbolic_helper as sym_help
-from torch.onnx.symbolic_registry import register_op, \
-                                         get_registered_op, \
-                                         is_registered_op
-
+from torch.onnx.symbolic_registry import (get_registered_op, is_registered_op,
+                                          register_op)
 
 DOMAIN_CUSTOM_OPS_NAME = 'org.openvinotoolkit'
 
@@ -15,10 +13,8 @@ def add_domain(name_operator: str) -> str:
 
 
 def py_symbolic(op_name=None, namespace='mmdet_custom', adapter=None):
-    """
-    The py_symbolic decorator allows associating a function
-    with a custom symbolic function that defines its representation
-    in a computational graph.
+    """The py_symbolic decorator allows associating a function with a custom
+    symbolic function that defines its representation in a computational graph.
 
     A symbolic function cannot receive a collection of tensors as arguments.
     If your custom function takes a collection of tensors as arguments,
@@ -53,7 +49,9 @@ def py_symbolic(op_name=None, namespace='mmdet_custom', adapter=None):
            pass it to the decorator:
             @py_symbolic(op_name='custom_op_name', adapter=converter)
     """
+
     def decorator(func):
+
         @wraps(func)
         def wrapped_function(*args, **kwargs):
 
@@ -63,6 +61,7 @@ def py_symbolic(op_name=None, namespace='mmdet_custom', adapter=None):
             if is_registered_op(name, namespace, opset):
 
                 class XFunction(torch.autograd.Function):
+
                     @staticmethod
                     def forward(ctx, *xargs):
                         return func(*args, **kwargs)
@@ -80,31 +79,64 @@ def py_symbolic(op_name=None, namespace='mmdet_custom', adapter=None):
                 return XFunction.apply(*args)
             else:
                 return func(*args, **kwargs)
+
         return wrapped_function
+
     return decorator
 
 
-def roi_feature_extractor_symbolics(g, rois, *feats,
+def roi_feature_extractor_symbolics(g,
+                                    rois,
+                                    *feats,
                                     output_size=1,
                                     featmap_strides=1,
                                     sample_num=1):
     from torch.onnx.symbolic_helper import _slice_helper
     rois = _slice_helper(g, rois, axes=[1], starts=[1], ends=[5])
-    roi_feats = g.op(add_domain('ExperimentalDetectronROIFeatureExtractor'),
-                     rois,
-                     *feats,
-                     output_size_i=output_size,
-                     pyramid_scales_i=featmap_strides,
-                     sampling_ratio_i=sample_num,
-                     image_id_i=0,
-                     distribute_rois_between_levels_i=1,
-                     preserve_rois_order_i=0,
-                     aligned_i=1,
-                     outputs=1)
+    roi_feats = g.op(
+        add_domain('ExperimentalDetectronROIFeatureExtractor'),
+        rois,
+        *feats,
+        output_size_i=output_size,
+        pyramid_scales_i=featmap_strides,
+        sampling_ratio_i=sample_num,
+        image_id_i=0,
+        distribute_rois_between_levels_i=1,
+        preserve_rois_order_i=0,
+        aligned_i=1,
+        outputs=1)
     return roi_feats
+
+
+def dcn_symbolic(g,
+                 input,
+                 offset,
+                 weight,
+                 stride,
+                 padding,
+                 dilation,
+                 groups,
+                 deform_groups,
+                 bias=False,
+                 im2col_step=32):
+    assert not bias
+    assert groups == 1
+    kh, kw = weight.type().sizes()[2:]
+    return g.op(
+        add_domain('DeformableConv2D'),
+        input,
+        offset,
+        weight,
+        strides_i=stride,
+        pads_i=[p for pair in zip(padding, padding) for p in pair],
+        dilations_i=dilation,
+        groups_i=groups,
+        deformable_groups_i=deform_groups,
+        kernel_shape_i=[kh, kw])
 
 
 def register_extra_symbolics_for_openvino(opset=10):
     assert opset >= 10
     register_op('roi_feature_extractor', roi_feature_extractor_symbolics,
                 'mmdet_custom', opset)
+    register_op('deform_conv', dcn_symbolic, 'mmdet_custom', opset)

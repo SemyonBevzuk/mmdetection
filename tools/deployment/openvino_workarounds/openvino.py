@@ -1,4 +1,5 @@
 from functools import wraps
+
 import onnx
 import torch
 
@@ -153,11 +154,12 @@ def fix_roi_feature_extractor():
     from .symbolic import py_symbolic
 
     def adapter(self, feats, rois):
-        return ((rois,) + tuple(feats), {
+        return ((rois, ) + tuple(feats), {
             'output_size': self.roi_layers[0].output_size[0],
             'featmap_strides': self.featmap_strides,
             'sample_num': self.roi_layers[0].sampling_ratio
         })
+
     from mmdet.models.roi_heads.roi_extractors.single_level_roi_extractor\
         import SingleRoIExtractor
     SingleRoIExtractor.forward = \
@@ -165,8 +167,17 @@ def fix_roi_feature_extractor():
                     adapter=adapter)(SingleRoIExtractor.forward)
 
 
+def fix_dcn_symbolic():
+    from .symbolic import py_symbolic
+
+    from mmcv.ops.deform_conv import DeformConv2dFunction
+    DeformConv2dFunction.forward = \
+        py_symbolic(op_name='deform_conv')(DeformConv2dFunction.forward)
+
+
 def apply_all_fixes():
     fix_topk_inds_output_type_problem()
     fix_foveabox_problem()
     fix_yolov3_problem()
     fix_roi_feature_extractor()
+    fix_dcn_symbolic()

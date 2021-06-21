@@ -24,7 +24,7 @@ def fix_get_bboxes_output():
         return wrapper
 
     dense_heads = importlib.import_module('mmdet.models.dense_heads')
-    heads = ['FoveaHead', 'ATSSHead']
+    heads = ['FoveaHead', 'ATSSHead', 'VFNetHead']
     for head_name in heads:
         head_class = getattr(dense_heads, head_name)
         head_class.get_bboxes = crop_output(head_class.get_bboxes)
@@ -54,6 +54,36 @@ def fix_img_shape_type():
         SingleStageDetector.onnx_export)
 
 
+# Need to fix, it does not work :(
+def fix_model_device_type():
+    """The VFNet model requires the DeformConv operation, which is not
+    implemented for CPU tensors.
+
+    This function changes the device type for the model and input data.
+    """
+
+    def try_to_change_device_type(generate_inputs_and_wrap_model):
+
+        @wraps(generate_inputs_and_wrap_model)
+        def wrapper(*args, **kwargs):
+            model, tensor_data = generate_inputs_and_wrap_model(
+                *args, **kwargs)
+            if torch.cuda.is_available():
+                model.cuda()
+            device = next(model.parameters()).device
+            tensor_data = [tensor.to(device) for tensor in tensor_data]
+            return model, tensor_data
+
+        return wrapper
+
+    pass
+
+    from mmdet.core.export import generate_inputs_and_wrap_model
+    generate_inputs_and_wrap_model = try_to_change_device_type(
+        generate_inputs_and_wrap_model)
+
+
 def apply_all_fixes():
     fix_get_bboxes_output()
     fix_img_shape_type()
+    # fix_model_device_type()
