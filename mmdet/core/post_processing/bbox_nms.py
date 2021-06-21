@@ -82,7 +82,11 @@ def multiclass_nms(multi_bboxes,
         else:
             return dets, labels
 
-    nms_cfg['score_threshold'] = score_thr if score_factors is None else 0
+    if torch.onnx.is_in_onnx_export():
+        nms_cfg['score_threshold'] = score_thr
+    else:
+        # Important for YOLOv3 in PyTorch
+        nms_cfg['score_threshold'] = score_thr if score_factors is None else 0
     nms_cfg['max_num'] = max_num
 
     dets, keep = batched_nms(bboxes, scores, labels, nms_cfg)
