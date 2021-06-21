@@ -1,4 +1,5 @@
 import argparse
+import openvino_workarounds as workarounds
 
 
 def parse_args_wrapper(args_list=None):
@@ -28,28 +29,23 @@ def run_pytorch2onnx(args):
 
 def update_strip_doc_string():
     from torch import onnx
-    from openvino_workarounds.mmdetection import update_default_args_value
-    onnx.export = update_default_args_value(
+    onnx.export = workarounds.update_default_args_value(
         onnx.export, strip_doc_string=False)
 
 
 if __name__ == '__main__':
     wrapper_args, pytorch2onnx_args = parse_args()
 
-    from openvino_workarounds.openvino import apply_all_fixes
-    apply_all_fixes()
-    from openvino_workarounds.mmdetection import apply_all_fixes
-    apply_all_fixes()
+    workarounds.apply_all_fixes_openvino()
+    workarounds.apply_all_fixes_mmdetection()
 
     if wrapper_args.not_strip_doc_string:
         update_strip_doc_string()
 
-    from openvino_workarounds.symbolic import \
-        register_extra_symbolics_for_openvino
-    register_extra_symbolics_for_openvino(pytorch2onnx_args.opset_version)
+    workarounds.register_extra_symbolics_for_openvino(
+        pytorch2onnx_args.opset_version)
 
     run_pytorch2onnx(pytorch2onnx_args)
 
-    from openvino_workarounds.openvino import rename_input_onnx
     onnx_model_path = pytorch2onnx_args.output_file
-    rename_input_onnx(onnx_model_path, 'input', 'image')
+    workarounds.rename_input_onnx(onnx_model_path, 'input', 'image')
