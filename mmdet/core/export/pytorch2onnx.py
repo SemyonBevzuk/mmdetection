@@ -43,6 +43,16 @@ def generate_inputs_and_wrap_model(config_path,
     model = build_model_from_cfg(
         config_path, checkpoint_path, cfg_options=cfg_options)
     one_img, one_meta = preprocess_example_input(input_config)
+    '''
+    VFNet requires the DeformConv operation,
+    which is not implemented for CPU tensors.
+    So there will be many small changes to the device type.
+    '''
+    if torch.cuda.is_available():
+        model.cuda()
+    device = next(model.parameters()).device
+    one_img = one_img.to(device)
+
     tensor_data = [one_img]
     model.forward = partial(
         model.forward, img_metas=[[one_meta]], return_loss=False)
