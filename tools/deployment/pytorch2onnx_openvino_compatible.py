@@ -1,7 +1,7 @@
 import argparse
 
-import openvino_workarounds as workarounds
-from openvino_workarounds import OpenvinoExportHelper
+from openvino_workarounds import (OpenvinoExportHelper,
+                                  update_default_args_value)
 
 
 def parse_args_wrapper(args_list=None):
@@ -31,15 +31,14 @@ def run_pytorch2onnx(args):
 
 def update_strip_doc_string():
     from torch import onnx
-    onnx.export = workarounds.update_default_args_value(
+    onnx.export = update_default_args_value(
         onnx.export, strip_doc_string=False)
 
 
 if __name__ == '__main__':
     wrapper_args, pytorch2onnx_args = parse_args()
 
-    workarounds.apply_all_fixes_openvino()
-    workarounds.apply_all_fixes_mmdetection()
+    OpenvinoExportHelper.apply_fixes()
 
     if wrapper_args.not_strip_doc_string:
         update_strip_doc_string()

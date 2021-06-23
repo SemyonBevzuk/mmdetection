@@ -1,5 +1,6 @@
-import torch
 from functools import wraps
+
+import torch
 
 
 def fix_topk_inds_output_type_problem():
@@ -132,9 +133,3 @@ def fix_yolov3_problem():
 
     from mmdet.core.bbox.coder.yolo_bbox_coder import YOLOBBoxCoder
     YOLOBBoxCoder.decode = decode
-
-
-def apply_all_fixes():
-    fix_topk_inds_output_type_problem()
-    fix_foveabox_problem()
-    fix_yolov3_problem()

@@ -1,7 +1,8 @@
+import importlib
 import inspect
-import re
-import onnx
 from functools import partial
+
+import onnx
 
 
 def update_default_args_value(func, **updated_args):
@@ -10,40 +11,51 @@ def update_default_args_value(func, **updated_args):
 
 
 class OpenvinoExportHelper():
-    """
-    This class contains useful methods that are needed to create OpenVINO
-    compatible models.
-    """
+    """This class contains useful methods that are needed to create OpenVINO
+    compatible models."""
+
+    @staticmethod
+    def __get_funtions_with_pattern(module_name, pattern):
+        """Returns a list of function and function names from the specified
+        module that match a pattern."""
+        module = importlib.import_module(
+            '.' + module_name, package='openvino_workarounds')
+        function_members = inspect.getmembers(module, inspect.isfunction)
+        selected_functions = []
+        for name, func in function_members:
+            if pattern in name:
+                selected_functions.append((name, func))
+        return selected_functions
 
     @staticmethod
     def process_extra_symbolics_for_openvino(opset=11):
-        """
-        Registers additional symbolic functions for OpenVINO (defined in
+        """Registers additional symbolic functions for OpenVINO (defined in
         'symbolic.py') and applies replacement to the original symbolic
         functions.
+
+        To use a patch, its name must begin with 'get_patch_'.
         """
         assert opset >= 10
-        from . import symbolic
-        function_members = inspect.getmembers(symbolic, inspect.isfunction)
+        module_name = 'symbolic'
         pattern = 'get_patch_'
-        patch_functions = []
-        for name, func in function_members:
-            if re.match(pattern, name):
-                patch_functions.append(func)
+        patch_functions = OpenvinoExportHelper.__get_funtions_with_pattern(
+            module_name, pattern)
 
         domain = 'mmdet_custom'
         from torch.onnx.symbolic_registry import register_op
-        for patch_func in patch_functions:
-            patch = patch_func()
+        print('\t Symbolic function patches:')
+        for name, function in patch_functions:
+            patch = function()
             opname = patch.get_operation_name()
             symbolic_function = patch.get_symbolic_func()
             register_op(opname, symbolic_function, domain, opset)
             patch.apply_patch()
+            text = name.replace(pattern, '')
+            print(f'Patch {text} applied')
 
     @staticmethod
     def rename_input_onnx(onnx_model_path, old_name, new_name):
-        """
-        Changes the input name of the model.
+        """Changes the input name of the model.
 
         Useful for use in tests from OTEDetection.
         """
@@ -58,3 +70,28 @@ class OpenvinoExportHelper():
                 input.name = new_name
 
         onnx.save(onnx_model, onnx_model_path)
+
+    @staticmethod
+    def __apply_fixes_from_module(module_name):
+        """Applies all fixes from the specified file.
+
+        To use a fix, its name must begin with 'fix_'.
+        """
+        pattern = 'fix_'
+        fix_functions = OpenvinoExportHelper.__get_funtions_with_pattern(
+            module_name, pattern)
+
+        print(f'\t Fixes {module_name}')
+        for name, function in fix_functions:
+            function()
+            text = name.replace(pattern, '')
+            print(f'Fix {text} applied')
+
+    @staticmethod
+    def apply_fixes():
+        """This function applies all fixes, contained in the
+        'openvino_workarounds' package."""
+
+        modules = ['mmdetection', 'openvino']
+        for module in modules:
+            OpenvinoExportHelper.__apply_fixes_from_module(module)
