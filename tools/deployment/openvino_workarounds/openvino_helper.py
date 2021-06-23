@@ -17,7 +17,7 @@ class OpenvinoExportHelper():
     @staticmethod
     def __get_funtions_with_pattern(module_name, pattern):
         """Returns a list of function and function names from the specified
-        module that match a pattern."""
+        module, that match a pattern."""
         module = importlib.import_module(
             '.' + module_name, package='openvino_workarounds')
         function_members = inspect.getmembers(module, inspect.isfunction)
@@ -33,7 +33,7 @@ class OpenvinoExportHelper():
         'symbolic.py') and applies replacement to the original symbolic
         functions.
 
-        To use a patch, its name must begin with 'get_patch_'.
+        To use a patch, its name must start with 'get_patch_'.
         """
         assert opset >= 10
         module_name = 'symbolic'
@@ -75,7 +75,7 @@ class OpenvinoExportHelper():
     def __apply_fixes_from_module(module_name):
         """Applies all fixes from the specified file.
 
-        To use a fix, its name must begin with 'fix_'.
+        To use a fix, its name must start with 'fix_'.
         """
         pattern = 'fix_'
         fix_functions = OpenvinoExportHelper.__get_funtions_with_pattern(
