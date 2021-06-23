@@ -1,18 +1,14 @@
-import importlib
-from functools import partial, wraps
-
 import torch
-
-
-def update_default_args_value(func, **updated_args):
-    new_func = partial(func, **updated_args)
-    return new_func
+import importlib
+from functools import wraps
 
 
 def fix_get_bboxes_output():
-    """Because in SingleStageDetector.onnx_export, after calling
+    """
+    Because in SingleStageDetector.onnx_export, after calling
     self.bbox_head.get_bboxes, only two output values are expected: det_bboxes,
-    det_labels."""
+    det_labels.
+    """
 
     def crop_output(function):
 
@@ -31,7 +27,8 @@ def fix_get_bboxes_output():
 
 
 def fix_img_shape_type():
-    """Some models (ATSS, FoveaBox) use img_metas[0]['img_shape'], which type
+    """
+    Some models (ATSS, FoveaBox) use img_metas[0]['img_shape'], which type
     is 'list'.
 
     To export with dynamic inputs, the type should be changed to 'tensor'.
@@ -56,7 +53,8 @@ def fix_img_shape_type():
 
 # Need to fix, it does not work :(
 def fix_model_device_type():
-    """The VFNet model requires the DeformConv operation, which is not
+    """
+    The VFNet model requires the DeformConv operation, which is not
     implemented for CPU tensors.
 
     This function changes the device type for the model and input data.

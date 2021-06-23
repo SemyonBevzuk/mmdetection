@@ -1,5 +1,7 @@
 import argparse
+
 import openvino_workarounds as workarounds
+from openvino_workarounds import OpenvinoExportHelper
 
 
 def parse_args_wrapper(args_list=None):
@@ -42,10 +44,10 @@ if __name__ == '__main__':
     if wrapper_args.not_strip_doc_string:
         update_strip_doc_string()
 
-    workarounds.register_extra_symbolics_for_openvino(
+    OpenvinoExportHelper.process_extra_symbolics_for_openvino(
         pytorch2onnx_args.opset_version)
 
     run_pytorch2onnx(pytorch2onnx_args)
 
     onnx_model_path = pytorch2onnx_args.output_file
-    workarounds.rename_input_onnx(onnx_model_path, 'input', 'image')
+    OpenvinoExportHelper.rename_input_onnx(onnx_model_path, 'input', 'image')

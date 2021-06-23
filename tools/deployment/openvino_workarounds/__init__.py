@@ -7,14 +7,12 @@ is incompatible with libgomp.so.1 library.
 '''
 os.environ['MKL_THREADING_LAYER'] = 'GNU'
 
-from .symbolic import register_extra_symbolics_for_openvino
-from .mmdetection import update_default_args_value, \
-                         apply_all_fixes as apply_all_fixes_mmdetection
-from .openvino import rename_input_onnx, \
-                      apply_all_fixes as apply_all_fixes_openvino
+from .mmdetection import apply_all_fixes as apply_all_fixes_mmdetection
+from .openvino import apply_all_fixes as apply_all_fixes_openvino
+from .openvino_helper import OpenvinoExportHelper, update_default_args_value
+
 
 __all__ = [
-    'register_extra_symbolics_for_openvino',
-    'update_default_args_value', 'apply_all_fixes_mmdetection',
-    'rename_input_onnx', 'apply_all_fixes_openvino'
+    'OpenvinoExportHelper', 'update_default_args_value',
+    'apply_all_fixes_mmdetection', 'apply_all_fixes_openvino'
 ]
