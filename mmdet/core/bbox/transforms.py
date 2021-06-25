@@ -138,7 +138,7 @@ def distance2bbox(points, distance, max_shape=None):
     y2 = points[..., 1] + distance[..., 3]
 
     # In OpenVino, we can simplify this part:
-    # Neet to VFNet.
+    # Need to VFNet.
     # '''
     if max_shape is not None:
         x1 = x1.clamp(min=0, max=max_shape[1])

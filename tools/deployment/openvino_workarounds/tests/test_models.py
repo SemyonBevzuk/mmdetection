@@ -18,6 +18,64 @@ config_path_root = os.path.join('configs')
 config_name = 'config'
 
 
+def shorten_annotation(src_path, dst_path, num_images):
+    with open(src_path) as read_file:
+        content = json.load(read_file)
+        selected_indexes = sorted([item['id'] for item in content['images']])
+        selected_indexes = selected_indexes[:num_images]
+        content['images'] = [
+            item for item in content['images']
+            if item['id'] in selected_indexes
+        ]
+        content['annotations'] = [
+            item for item in content['annotations']
+            if item['image_id'] in selected_indexes
+        ]
+        content['licenses'] = [
+            item for item in content['licenses']
+            if item['id'] in selected_indexes
+        ]
+    with open(dst_path, 'w') as write_file:
+        json.dump(content, write_file)
+
+
+def get_data():
+    test_on_full = False
+    os.makedirs(coco_dir, exist_ok=True)
+    if not osp.exists(osp.join(coco_dir, 'val2017.zip')):
+        run(
+            f'wget --no-verbose '
+            f'http://images.cocodataset.org/zips/val2017.zip -P {coco_dir}',
+            check=True,
+            shell=True)
+    if not osp.exists(osp.join(coco_dir, 'val2017')):
+        run(f'unzip {osp.join(coco_dir, "val2017.zip")} -d {coco_dir}',
+            check=True,
+            shell=True)
+    if not osp.exists(osp.join(coco_dir, 'annotations_trainval2017.zip')):
+        run(
+            f'wget --no-verbose http://images.cocodataset.org/'
+            f'annotations/annotations_trainval2017.zip -P {coco_dir}',
+            check=True,
+            shell=True)
+    if not osp.exists(
+            osp.join(coco_dir, 'annotations/instances_val2017.json')):
+        run(
+            f'unzip -o {osp.join(coco_dir, "annotations_trainval2017.zip")}'
+            f' -d {coco_dir}',
+            check=True,
+            shell=True)
+    if test_on_full:
+        shorten_to = 5000
+    else:
+        shorten_to = 10
+    annotation_file = osp.join(
+        coco_dir, f'annotations/instances_val2017_short_{shorten_to}.json')
+    shorten_annotation(
+        osp.join(coco_dir, 'annotations/instances_val2017.json'),
+        annotation_file, shorten_to)
+
+
 def collect_ap(path):
     ap = []
     beginning = \
@@ -463,6 +521,7 @@ def print_configuration_description():
 
 
 print_configuration_description()
+get_data()
 
 # Models from upstream with mods in mmcv and mmdet
 test_ssd()
