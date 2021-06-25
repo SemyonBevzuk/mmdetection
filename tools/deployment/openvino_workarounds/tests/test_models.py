@@ -150,15 +150,14 @@ def run_pytorch2openvino(config_path,
     return pytorch2openvino_output.decode()
 
 
-def run_export(model_name, config_path, checkpoint_url, opset_version):
+def run_export(model_name,
+               config_path,
+               checkpoint_url,
+               opset_version,
+               cfg_options=None):
     checkpoint_path = download_model(checkpoint_url)
     output_folder = get_output_path(model_name)
     onnx_output_file = os.path.join(output_folder, config_name + '.onnx')
-    cfg_options = 'model.test_cfg.rcnn.rescale_mask_to_input_shape=False' \
-        if 'mask_rcnn' in model_name else None
-    cfg_options = 'test_pipeline.1.transforms.4.type="ImageToTensor" ' \
-        'test_pipeline.1.transforms.4.keys=["img"]' \
-        if 'vfnet' in model_name else None
 
     pytorch2openvino_output = run_pytorch2openvino(config_path,
                                                    checkpoint_path,
@@ -218,11 +217,10 @@ def check_metrics_are_close(current_outputs, expected_outputs, metrics,
             )
 
 
-def check_model_with_imgs(model_name, config_path, model_path):
-    metrics = ('bbox', )
-    if model_name == 'mask_rcnn/mask_rcnn_r50_fpn_1x_coco':
-        metrics = ('bbox', 'segm')
-
+def check_model_with_imgs(model_name,
+                          config_path,
+                          model_path,
+                          metrics=('bbox', )):
     log_file = run_test_exported(config_path, model_path, metrics)
 
     expected_output_file = os.path.join(
@@ -250,12 +248,17 @@ def prerun(config_path, test_dir):
     return target_config_path
 
 
-def run_export_test(model_name, config_path, checkpoint_url, opset_version):
+def run_export_test(model_name,
+                    config_path,
+                    checkpoint_url,
+                    opset_version,
+                    cfg_options=None,
+                    metrics=('bbox', )):
     print(f'\t{model_name}, opset {opset_version}')
     config_path = prerun(config_path, get_output_path(model_name))
 
     output_folder = run_export(model_name, config_path, checkpoint_url,
-                               opset_version)
+                               opset_version, cfg_options)
     onnx_openmmlab_model_path = os.path.join(output_folder,
                                              config_name + '.onnx')
     openvino_model_path = os.path.join(output_folder, config_name + '.xml')
@@ -263,7 +266,7 @@ def run_export_test(model_name, config_path, checkpoint_url, opset_version):
               ('OpenVINO IR', openvino_model_path)]
     for name, model_path in models:
         try:
-            check_model_with_imgs(model_name, config_path, model_path)
+            check_model_with_imgs(model_name, config_path, model_path, metrics)
             print(f'{colorama.Fore.GREEN}'
                   f'For {name}, metrics on 10 images are the same as expected.'
                   f'{colorama.Style.RESET_ALL}')
@@ -408,8 +411,11 @@ def test_mask_rcnn():
         'mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_1x_coco/' \
         'mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth'
     opset_version = '11'
+    cfg_options = 'model.test_cfg.rcnn.rescale_mask_to_input_shape=False'
+    metrics = ('bbox', 'segm')
 
-    run_export_test(model_name, config_path, checkpoint_url, opset_version)
+    run_export_test(model_name, config_path, checkpoint_url, opset_version,
+                    cfg_options, metrics)
 
 
 def test_cornernet():
@@ -435,10 +441,12 @@ def test_vfnet():
         'https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/' \
         'vfnet/vfnet_r50_fpn_1x_coco/' \
         'vfnet_r50_fpn_1x_coco_20201027-38db6f58.pth'
-
+    cfg_options = 'test_pipeline.1.transforms.4.type="ImageToTensor" ' \
+        'test_pipeline.1.transforms.4.keys=["img"]'
     opset_version = '11'
 
-    run_export_test(model_name, config_path, checkpoint_url, opset_version)
+    run_export_test(model_name, config_path, checkpoint_url, opset_version,
+                    cfg_options)
 
 
 def print_configuration_description():
@@ -464,17 +472,17 @@ def print_configuration_description():
 print_configuration_description()
 
 # Models from upstream with mods in mmcv and mmdet
-test_ssd()
-test_yolov3()
-test_fsaf()
-test_retinanet()
-test_faster_rcnn()
-test_fcos()
-test_mask_rcnn()
+# test_ssd()
+# test_yolov3()
+# test_fsaf()
+# test_retinanet()
+# test_faster_rcnn()
+# test_fcos()
+# test_mask_rcnn()
 
 # Successfully exported.
-test_foveabox()
-test_atss()
+# test_foveabox()
+# test_atss()
 test_vfnet()
 
 # Unsuccessfully exported.
