@@ -1,7 +1,8 @@
+from functools import wraps
+
 import torch
 import torch.onnx.symbolic_helper as sym_help
-from torch.onnx.symbolic_registry import (get_registered_op, is_registered_op)
-from functools import wraps
+from torch.onnx.symbolic_registry import get_registered_op, is_registered_op
 
 DOMAIN_CUSTOM_OPS_NAME = 'org.openvinotoolkit'
 
@@ -11,8 +12,7 @@ def add_domain(name_operator: str) -> str:
 
 
 def py_symbolic(op_name=None, namespace='mmdet_custom', adapter=None):
-    """
-    The py_symbolic decorator allows associating a function with a custom
+    """The py_symbolic decorator allows associating a function with a custom
     symbolic function that defines its representation in a computational graph.
 
     A symbolic function cannot receive a collection of tensors as arguments.
@@ -96,6 +96,7 @@ class PatchSymbolic():
     you need to create the "get_patch_" function,
     which will return the "PatchSymbolic" object.
     """
+
     def __init__(self, operation_name, symbolic_func, patch_func):
         self.operation_name = operation_name
         self.symbolic_func = symbolic_func
@@ -112,9 +113,9 @@ class PatchSymbolic():
 
 
 def get_patch_roi_feature_extractor() -> PatchSymbolic:
-    """
-    Replaces standard RoiAlign with ExperimentalDetectronROIFeatureExtractor
+    """Replaces standard RoiAlign with ExperimentalDetectronROIFeatureExtractor
     for faster work in OpenVINO IR.
+
     Used in Faster-RCNN, Mask-RCNN.
     """
     operation_name = 'roi_feature_extractor'
@@ -142,6 +143,7 @@ def get_patch_roi_feature_extractor() -> PatchSymbolic:
         return roi_feats
 
     def patch():
+
         def adapter(self, feats, rois):
             return ((rois, ) + tuple(feats), {
                 'output_size': self.roi_layers[0].output_size[0],
@@ -159,8 +161,8 @@ def get_patch_roi_feature_extractor() -> PatchSymbolic:
 
 
 def get_patch_deformable_conv_2d() -> PatchSymbolic:
-    """
-    Adds a DeformableConv2D operation for OpenVINO IR.
+    """Adds a DeformableConv2D operation for OpenVINO IR.
+
     Used in VFNet.
     """
     operation_name = 'deform_conv'
@@ -193,7 +195,8 @@ def get_patch_deformable_conv_2d() -> PatchSymbolic:
 
     def patch():
         from mmcv.ops.deform_conv import DeformConv2dFunction
-        DeformConv2dFunction.forward = \
-            py_symbolic(op_name=operation_name)(DeformConv2dFunction.forward)
+        DeformConv2dFunction.symbolic = staticmethod(symbolic)
+        # DeformConv2dFunction.forward = \
+        #    py_symbolic(op_name=operation_name)(DeformConv2dFunction.forward)
 
     return PatchSymbolic(operation_name, symbolic, patch)
