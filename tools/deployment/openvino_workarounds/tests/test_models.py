@@ -117,19 +117,14 @@ def get_mean_and_scale_values(config):
 
 
 @timer
-def run_pytorch2openvino(config_path,
-                         checkpoint_path,
-                         output_file,
-                         opset_version,
-                         cfg_options=None):
+def run_pytorch2openvino(config_path, checkpoint_path, output_file,
+                         opset_version):
     error = None
     try:
         pytorch2openvino_args = f'{pytorch2openvino_path} ' \
             f'{config_path} {checkpoint_path} ' \
             f'--output-file {output_file} --opset-version {opset_version} ' \
             f'--dynamic-export '
-        if cfg_options:
-            pytorch2openvino_args += f'--cfg-options {cfg_options} '
         pytorch2openvino_args += '--not_strip_doc_string '
 
         command = f'python {pytorch2openvino_args}'
@@ -138,8 +133,7 @@ def run_pytorch2openvino(config_path,
             '/bin/bash',
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )  # ~~~~~~~~~~~ remove stderr and fix stderr=subprocess.PIPE
+            stderr=subprocess.PIPE)
         pytorch2openvino_output, pytorch2openvino_errors = process.communicate(
             command.encode())
     except CalledProcessError as ex:
@@ -150,11 +144,7 @@ def run_pytorch2openvino(config_path,
     return pytorch2openvino_output.decode()
 
 
-def run_export(model_name,
-               config_path,
-               checkpoint_url,
-               opset_version,
-               cfg_options=None):
+def run_export(model_name, config_path, checkpoint_url, opset_version):
     checkpoint_path = download_model(checkpoint_url)
     output_folder = get_output_path(model_name)
     onnx_output_file = os.path.join(output_folder, config_name + '.onnx')
@@ -162,7 +152,7 @@ def run_export(model_name,
     pytorch2openvino_output = run_pytorch2openvino(config_path,
                                                    checkpoint_path,
                                                    onnx_output_file,
-                                                   opset_version, cfg_options)
+                                                   opset_version)
 
     check_pytorch2openvino_output(pytorch2openvino_output)
     check_files(output_folder)
@@ -230,10 +220,12 @@ def check_model_with_imgs(model_name,
     check_metrics_are_close(log_file, expected_output_file, metrics, thr)
 
 
-def prerun(config_path, test_dir):
+def prerun(config_path, test_dir, cfg_options=None):
     os.makedirs(test_dir, exist_ok=True)
     target_config_path = osp.join(test_dir, config_name + '.py')
     cfg = mmcv.Config.fromfile(config_path)
+    if cfg_options is not None:
+        cfg.merge_from_dict(cfg_options)
 
     annotation_file = osp.join(coco_dir,
                                'annotations/instances_val2017_short_10.json')
@@ -255,10 +247,10 @@ def run_export_test(model_name,
                     cfg_options=None,
                     metrics=('bbox', )):
     print(f'\t{model_name}, opset {opset_version}')
-    config_path = prerun(config_path, get_output_path(model_name))
+    config_path = prerun(config_path, get_output_path(model_name), cfg_options)
 
     output_folder = run_export(model_name, config_path, checkpoint_url,
-                               opset_version, cfg_options)
+                               opset_version)
     onnx_openmmlab_model_path = os.path.join(output_folder,
                                              config_name + '.onnx')
     openvino_model_path = os.path.join(output_folder, config_name + '.xml')
@@ -411,7 +403,7 @@ def test_mask_rcnn():
         'mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_1x_coco/' \
         'mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth'
     opset_version = '11'
-    cfg_options = 'model.test_cfg.rcnn.rescale_mask_to_input_shape=False'
+    cfg_options = {'model.test_cfg.rcnn.rescale_mask_to_input_shape': False}
     metrics = ('bbox', 'segm')
 
     run_export_test(model_name, config_path, checkpoint_url, opset_version,
@@ -423,10 +415,9 @@ def test_cornernet():
     config_path = os.path.join(config_path_root, model_name + '.py')
     checkpoint_url = \
         'http://download.openmmlab.com/mmdetection/v2.0/' \
-        'cornernet/cornernet_hourglass104_mstest_10x5_210e_coco/ ' \
+        'cornernet/cornernet_hourglass104_mstest_10x5_210e_coco/' \
         'cornernet_hourglass104_mstest_10x5_210e_coco_' \
         '20200824_185720-5fefbf1c.pth'
-
     opset_version = '11'
 
     run_export_test(model_name, config_path, checkpoint_url, opset_version)
@@ -441,8 +432,10 @@ def test_vfnet():
         'https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/' \
         'vfnet/vfnet_r50_fpn_1x_coco/' \
         'vfnet_r50_fpn_1x_coco_20201027-38db6f58.pth'
-    cfg_options = 'test_pipeline.1.transforms.4.type="ImageToTensor" ' \
-        'test_pipeline.1.transforms.4.keys=["img"]'
+    cfg_options = {
+        'data.test.pipeline.1.transforms.4.type': 'ImageToTensor',
+        'data.test.pipeline.1.transforms.4.keys': ['img']
+    }
     opset_version = '11'
 
     run_export_test(model_name, config_path, checkpoint_url, opset_version,
@@ -472,22 +465,22 @@ def print_configuration_description():
 print_configuration_description()
 
 # Models from upstream with mods in mmcv and mmdet
-# test_ssd()
-# test_yolov3()
-# test_fsaf()
-# test_retinanet()
-# test_faster_rcnn()
-# test_fcos()
-# test_mask_rcnn()
+test_ssd()
+test_yolov3()
+test_fsaf()
+test_retinanet()
+test_faster_rcnn()
+test_fcos()
+test_mask_rcnn()
 
 # Successfully exported.
-# test_foveabox()
-# test_atss()
+test_foveabox()
+test_atss()
 test_vfnet()
+test_dcn_faster_rcnn()
 
 # Unsuccessfully exported.
 # test_cornernet() # need cummax
-# test_dcn_faster_rcnn()
 # test_gn_mask_rcnn()
 # test_cascade_rcnn()
 # test_efficientdet()
