@@ -72,8 +72,9 @@ class OpenvinoExportHelper():
         onnx.save(onnx_model, onnx_model_path)
 
     @staticmethod
-    def __apply_fixes_from_module(module_name):
-        """Applies all fixes from the specified file.
+    def __apply_fixes_from_module(module_name, skip_fixes):
+        """Applies all fixes from the specified file. If you want to disable a
+        specific fix, then add it to 'skip_fixes'.
 
         To use a fix, its name must start with 'fix_'.
         """
@@ -83,15 +84,35 @@ class OpenvinoExportHelper():
 
         print(f'\t Fixes {module_name}')
         for name, function in fix_functions:
-            function()
-            text = name.replace(pattern, '')
-            print(f'Fix {text} applied')
+            fix_name = name.replace(pattern, '')
+            if name in skip_fixes:
+                print(f'Fix {fix_name} skipped.')
+            else:
+                function()
+                print(f'Fix {fix_name} applied.')
 
     @staticmethod
-    def apply_fixes():
+    def apply_fixes(skip_fixes=[]):
         """This function applies all fixes, contained in the
-        'openvino_workarounds' package."""
+        'openvino_workarounds' package.
+
+        If you want to disable a specific fix, then add it to 'skip_fixes'.
+        """
 
         modules = ['mmdetection', 'openvino']
         for module in modules:
-            OpenvinoExportHelper.__apply_fixes_from_module(module)
+            OpenvinoExportHelper.__apply_fixes_from_module(module, skip_fixes)
+
+    @staticmethod
+    def apply_fix(module_name, fix_name):
+        """This function applies the selected fix from the selected module."""
+
+        pattern = 'fix_'
+        fix_functions = OpenvinoExportHelper.__get_funtions_with_pattern(
+            module_name, pattern)
+
+        for name, function in fix_functions:
+            if name == fix_name:
+                function()
+                text = name.replace(pattern, '')
+                print(f'Fix {text} applied')

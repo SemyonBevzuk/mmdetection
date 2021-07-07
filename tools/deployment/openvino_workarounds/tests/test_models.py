@@ -520,26 +520,27 @@ def print_configuration_description():
     print()
 
 
-print_configuration_description()
-get_data()
+if __name__ == '__main__':
+    print_configuration_description()
+    get_data()
 
-# Models from upstream with mods in mmcv and mmdet
-test_ssd()
-test_yolov3()
-test_fsaf()
-test_retinanet()
-test_faster_rcnn()
-test_fcos()
-test_mask_rcnn()
+    # Models from upstream with mods in mmcv and mmdet
+    test_ssd()
+    test_yolov3()
+    test_fsaf()
+    test_retinanet()
+    test_faster_rcnn()
+    test_fcos()
+    test_mask_rcnn()
 
-# Successfully exported.
-test_foveabox()
-test_atss()
-test_vfnet()
-test_dcn_faster_rcnn()
+    # Successfully exported.
+    test_foveabox()
+    test_atss()
+    test_vfnet()
+    test_dcn_faster_rcnn()
 
-# Unsuccessfully exported.
-# test_cornernet() # need cummax
-# test_gn_mask_rcnn()
-# test_cascade_rcnn()
-# test_efficientdet()
+    # Unsuccessfully exported.
+    # test_cornernet() # need cummax
+    # test_gn_mask_rcnn()
+    # test_cascade_rcnn()
+    # test_efficientdet()

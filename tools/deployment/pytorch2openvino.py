@@ -3,7 +3,6 @@ import os
 import subprocess
 from subprocess import CalledProcessError, run
 
-import mmcv
 import onnx
 from openvino_workarounds import (OpenvinoExportHelper,
                                   update_default_args_value)
@@ -15,15 +14,21 @@ def parse_args_wrapper(args_list=None):
     parser.add_argument(
         '--not_strip_doc_string',
         action='store_true',
-        help='If is, does not strip the field “doc_string”'
+        help='If is, does not strip the field "doc_string"'
         'from the exported model, which information about the stack trace.')
+    parser.add_argument(
+        '--skip_fixes',
+        type=str,
+        nargs='+',
+        default=[],
+        help='The names of the fixes to be skipped.')
 
     args, other_args_list = parser.parse_known_args(args=args_list)
     return args, other_args_list
 
 
 def parse_args(args_list=None):
-    wrapper_args, args_list = parse_args_wrapper()
+    wrapper_args, args_list = parse_args_wrapper(args_list)
     from pytorch2onnx import parse_args as parse_args_pytorch2onnx
     pytorch2onnx_args = parse_args_pytorch2onnx(args_list)
     return wrapper_args, pytorch2onnx_args
@@ -63,7 +68,8 @@ def get_mean_and_scale_values(config):
 
 def run_mo(config_path, model_onnx_path):
     output_dir = check_output_path(model_onnx_path)
-    config = mmcv.Config.fromfile(config_path)
+    from mmcv import Config
+    config = Config.fromfile(config_path)
     mean_values, scale_values = get_mean_and_scale_values(config)
     output = ','.join(
         set(out.name for out in onnx.load(model_onnx_path).graph.output))
@@ -106,7 +112,7 @@ def main(args=None):
 
     check_output_path(pytorch2onnx_args.output_file)
 
-    OpenvinoExportHelper.apply_fixes()
+    OpenvinoExportHelper.apply_fixes(wrapper_args.skip_fixes)
 
     if wrapper_args.not_strip_doc_string:
         update_strip_doc_string()

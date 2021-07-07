@@ -14,7 +14,10 @@ def fix_get_bboxes_output():
         @wraps(function)
         def wrapper(*args, **kwargs):
             output_list = function(*args, **kwargs)
-            return output_list[0]
+            if len(output_list) == 2:
+                return output_list
+            else:
+                return output_list[0]
 
         return wrapper
 

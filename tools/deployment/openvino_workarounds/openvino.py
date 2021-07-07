@@ -1,28 +1,4 @@
-from functools import wraps
-
 import torch
-
-
-def fix_topk_inds_output_type_problem():
-    """Fixed in OpenVINO 2021.4.
-
-    [MO] Incorrect TopK transformation.
-
-    TopK after MO returns indices with type int32, which can be added to
-    tensors with type int64.
-    """
-
-    def topk_inds_to_int64(function):
-
-        @wraps(function)
-        def wrapper(*args, **kwargs):
-            topk_values, topk_inds = function(*args, **kwargs)
-            topk_inds = topk_inds.to(dtype=torch.int64)
-            return topk_values, topk_inds
-
-        return wrapper
-
-    torch.Tensor.topk = topk_inds_to_int64(torch.Tensor.topk)
 
 
 def fix_foveabox_problem():
