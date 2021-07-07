@@ -29,8 +29,17 @@ def pytorch2onnx(model,
         'input_path': input_img,
         'normalize_cfg': normalize_cfg
     }
+    '''
+    VFNet requires the DeformConv operation,
+    which is not implemented for CPU tensors.
+    So there will be many small changes to the device type.
+    '''
+    if torch.cuda.is_available():
+        model.cuda()
+    device = next(model.parameters()).device
+
     # prepare input
-    one_img, one_meta = preprocess_example_input(input_config)
+    one_img, one_meta = preprocess_example_input(input_config, device)
     img_list, img_meta_list = [one_img], [[one_meta]]
     # replace original forward function
     origin_forward = model.forward
