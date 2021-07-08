@@ -331,12 +331,40 @@ def run_export_test(model_name,
     print()
 
 
+def upgrade_ssd_version(url):
+    checkpoint_path = download_model(url)
+    checkpoint_upgrade_path = checkpoint_path.replace('.pth', '_upgrade.pth')
+    model_converters_path = os.path.abspath(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', '..',
+            'tools', 'model_converters'))
+    upgrade_ssd_version_path = os.path.join(model_converters_path,
+                                            'upgrade_ssd_version.py')
+
+    command = f'python {upgrade_ssd_version_path}' \
+              f'{checkpoint_path} {checkpoint_upgrade_path}'
+    print(f'Args for upgrade_ssd_version: {command}')
+    run(command, check=True, shell=True)
+
+    return checkpoint_upgrade_path
+
+
 def test_ssd():
     model_name = 'ssd/ssd300_coco'
     config_path = os.path.join(config_path_root, model_name + '.py')
     checkpoint_url = 'http://download.openmmlab.com/mmdetection/v2.0/' \
         'ssd/ssd300_coco/' \
+        'ssd300_coco_20200307-a92d2092.pth'
+    # https://github.com/open-mmlab/mmdetection/tree/master/configs/ssd#notice
+    checkpoint_url = upgrade_ssd_version(checkpoint_url)
+
+    # With this checkpoint, the metric drops from 0.256 to 0.233.
+    # Checked using 'tools/deployment/test.py' on 5000 COCO imgs.
+    '''
+    checkpoint_url = 'http://download.openmmlab.com/mmdetection/v2.0/' \
+        'ssd/ssd300_coco/' \
         'ssd300_coco_20210604_193052-b61137df.pth'
+    '''
     opset_version = '11'
 
     run_export_test(model_name, config_path, checkpoint_url, opset_version)
