@@ -336,7 +336,7 @@ def test_ssd():
     config_path = os.path.join(config_path_root, model_name + '.py')
     checkpoint_url = 'http://download.openmmlab.com/mmdetection/v2.0/' \
         'ssd/ssd300_coco/' \
-        'ssd300_coco_20200307-a92d2092.pth'
+        'ssd300_coco_20210604_193052-b61137df.pth'
     opset_version = '11'
 
     run_export_test(model_name, config_path, checkpoint_url, opset_version)
