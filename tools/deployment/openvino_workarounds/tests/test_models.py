@@ -341,8 +341,8 @@ def upgrade_ssd_version(url):
     upgrade_ssd_version_path = os.path.join(model_converters_path,
                                             'upgrade_ssd_version.py')
 
-    command = f'python {upgrade_ssd_version_path}' \
-              f'{checkpoint_path} {checkpoint_upgrade_path}'
+    command = f'python {upgrade_ssd_version_path} ' \
+              f'{checkpoint_path} {checkpoint_upgrade_path} '
     print(f'Args for upgrade_ssd_version: {command}')
     run(command, check=True, shell=True)
 

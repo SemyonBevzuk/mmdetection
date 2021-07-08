@@ -99,7 +99,7 @@ class OpenvinoExportHelper():
         If you want to disable a specific fix, then add it to 'skip_fixes'.
         """
 
-        modules = ['mmdetection', 'openvino']
+        modules = ['mmdetection']
         for module in modules:
             OpenvinoExportHelper.__apply_fixes_from_module(module, skip_fixes)
 

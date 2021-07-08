@@ -91,7 +91,8 @@ def run_mo(config_path, model_onnx_path):
               f'--output_dir="{output_dir}" ' \
               f'--output="{output}" ' \
               f'--input_shape="{input_shape}" ' \
-              f'--reverse_input_channels'
+              f'--reverse_input_channels ' \
+              f'--disable_fusing '
     command = f'mo.py {mo_args}'
     print(f'Args for mo.py: {command}')
     run(command, shell=True, check=True)
