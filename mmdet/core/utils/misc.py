@@ -82,3 +82,11 @@ def flip_tensor(src_tensor, flip_direction):
     else:
         out_tensor = torch.flip(src_tensor, [2, 3])
     return out_tensor
+
+
+def to_numpy(x, dtype=np.float32):
+    if isinstance(x, torch.Tensor):
+        x = x.cpu().numpy()
+    assert isinstance(x, np.ndarray)
+    x = x.astype(dtype)
+    return x
