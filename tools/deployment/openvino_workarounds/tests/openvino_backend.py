@@ -14,11 +14,9 @@
 
 import logging
 import os.path as osp
-import string
 
 import numpy as np
 from openvino.inference_engine import IECore
-from scipy.special import softmax
 
 from mmdet.models import build_detector
 
@@ -149,103 +147,5 @@ class Detector(Model):
             output['masks'] = output['masks'][valid_detections_mask]
         except RuntimeError:
             pass
-
-        return output
-
-
-class MaskTextSpotterOpenVINO(Model):
-
-    def __init__(self,
-                 xml_file_path,
-                 *args,
-                 text_recognition_thr=0.5,
-                 **kwargs):
-        super().__init__(xml_file_path, *args, **kwargs)
-
-        batch_size = self.net.input_info['image'].input_data.shape[0]
-        assert batch_size == 1, 'Only batch 1 is supported.'
-
-        self.n, self.c, self.h, self.w = self.net.input_info[
-            'image'].input_data.shape
-        assert self.n == 1, 'Only batch 1 is supported.'
-
-        xml_path = xml_file_path.replace('.xml',
-                                         '_text_recognition_head_encoder.xml')
-        self.text_encoder = Model(xml_path)
-
-        xml_path = xml_file_path.replace('.xml',
-                                         '_text_recognition_head_decoder.xml')
-        self.text_decoder = Model(xml_path)
-        self.hidden_shape = [
-            v.shape for k, v in self.text_decoder.net.inputs.items()
-            if k == 'prev_hidden'
-        ][0]
-        self.alphabet = '  ' + string.ascii_lowercase + string.digits
-        self.text_recognition_thr = text_recognition_thr
-
-    def __call__(self, inputs, **kwargs):
-        inputs = self.unify_inputs(inputs)
-        output = super().__call__(inputs)
-
-        output = {
-            k: self.get(output, k)
-            for k in ('boxes', 'labels', 'masks', 'text_features')
-        }
-
-        valid_detections_mask = output['boxes'][:, -1] > 0
-        output['labels'] = output['labels'][valid_detections_mask]
-        output['boxes'] = output['boxes'][valid_detections_mask]
-        output['text_features'] = output['text_features'][
-            valid_detections_mask]
-
-        if 'masks' in output:
-            output['masks'] = output['masks'][valid_detections_mask]
-
-        eos = 1
-        max_seq_len = 28
-
-        confidences = []
-        decoded_texts = []
-        distributions = []
-        for feature in output['text_features']:
-            feature = np.expand_dims(feature, 0)
-            feature = self.text_encoder({'input': feature})
-            feature = self.text_encoder.get(feature, 'output')
-            feature = np.reshape(feature,
-                                 (feature.shape[0], feature.shape[1], -1))
-            feature = np.transpose(feature, (0, 2, 1))
-
-            hidden = np.zeros(self.hidden_shape)
-            prev_symbol = np.zeros((1, ))
-
-            decoded = ''
-            confidence = 1
-
-            distribution = []
-
-            for _ in range(max_seq_len):
-                out = self.text_decoder({
-                    'prev_symbol': prev_symbol,
-                    'prev_hidden': hidden,
-                    'encoder_outputs': feature
-                })
-                softmaxed = softmax(
-                    self.text_decoder.get(out, 'output'), axis=1)
-                distribution.append(softmaxed[0, 2:])
-                softmaxed_max = np.max(softmaxed, axis=1)
-                confidence *= softmaxed_max[0]
-                prev_symbol = np.argmax(softmaxed, axis=1)
-
-                if prev_symbol == eos:
-                    break
-                hidden = self.text_decoder.get(out, 'hidden')
-                decoded = decoded + self.alphabet[prev_symbol[0]]
-            distribution = np.transpose(np.array(distribution))
-            distributions.append(distribution)
-            confidences.append(confidence)
-            decoded_texts.append(
-                decoded if confidence >= self.text_recognition_thr else '')
-
-        output['texts'] = decoded_texts, confidences, distributions
 
         return output
