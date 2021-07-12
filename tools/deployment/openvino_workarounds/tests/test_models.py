@@ -34,6 +34,7 @@ class OpenvinoModelsTestCase(unittest.TestCase):
     mmdetection_dir = os.getcwd()
     config_path_root = osp.join(mmdetection_dir, 'configs')
     config_name = 'config'
+    log_file_name = 'test_log'
 
     @staticmethod
     def shorten_annotation(src_path, dst_path, num_images):
@@ -101,6 +102,9 @@ class OpenvinoModelsTestCase(unittest.TestCase):
             annotation_file, shorten_to)
 
     def prerun(self, config_path, test_dir, cfg_options=None):
+        log_file = osp.join(test_dir, self.log_file_name + '.log')
+        if os.path.exists(log_file):
+            os.remove(log_file)
         os.makedirs(test_dir, exist_ok=True)
         target_config_path = osp.join(test_dir, self.config_name + '.py')
         cfg = mmcv.Config.fromfile(config_path)
@@ -117,7 +121,7 @@ class OpenvinoModelsTestCase(unittest.TestCase):
         cfg.merge_from_dict(update_args)
         with open(target_config_path, 'wt') as config_file:
             config_file.write(cfg.pretty_text)
-        return target_config_path
+        return log_file, target_config_path
 
     @staticmethod
     def collect_ap(path):
@@ -181,7 +185,7 @@ class OpenvinoModelsTestCase(unittest.TestCase):
 
     @timer
     def run_pytorch2openvino(self, config_path, checkpoint_path, output_file,
-                             opset_version):
+                             opset_version, log_file):
         error = None
         pytorch2openvino_path = os.path.join(self.mmdetection_dir, 'tools',
                                              'deployment',
@@ -193,7 +197,6 @@ class OpenvinoModelsTestCase(unittest.TestCase):
                 f' --opset-version {opset_version} ' \
                 f'--dynamic-export '
             pytorch2openvino_args += '--not_strip_doc_string '
-
             command = f'python {pytorch2openvino_args}'
             print(f'Args for pytorch2openvino: {command}')
             process = subprocess.Popen(
@@ -205,19 +208,23 @@ class OpenvinoModelsTestCase(unittest.TestCase):
                 process.communicate(command.encode())
         except CalledProcessError as ex:
             error = 'Test script failure.\n' + ex.stderr
+        finally:
+            with open(log_file, 'a') as log_f:
+                log_f.write(pytorch2openvino_output.decode())
         if error is not None:
             raise RuntimeError(error)
 
         return pytorch2openvino_output.decode()
 
     def run_export(self, model_name, config_path, checkpoint_url,
-                   opset_version):
+                   opset_version, log_file):
         checkpoint_path = self.download_model(checkpoint_url)
         output_folder = self.get_output_path(model_name)
         onnx_output_file = osp.join(output_folder, self.config_name + '.onnx')
 
         pytorch2openvino_output = self.run_pytorch2openvino(
-            config_path, checkpoint_path, onnx_output_file, opset_version)
+            config_path, checkpoint_path, onnx_output_file, opset_version,
+            log_file)
 
         self.check_pytorch2openvino_output(pytorch2openvino_output)
         self.check_files(output_folder)
@@ -225,22 +232,22 @@ class OpenvinoModelsTestCase(unittest.TestCase):
         return output_folder
 
     def get_log_name(self, model_path):
-        if model_path.find('.onnx'):
-            return 'test_onnx.log'
-        elif model_path.find('.xml'):
-            return 'test_openvino.log'
+        if model_path.endswith('.onnx'):
+            return 'test_exported_onnx.log'
+        elif model_path.endswith('.xml'):
+            return 'test_exported_openvino.log'
         else:
             RuntimeError('The file must have extensions .onnx or .xml.')
 
     @timer
     def run_test_exported(self, config_path, model_path, metrics):
-        log_file = osp.join(
+        output_file = osp.join(
             os.path.dirname(model_path), self.get_log_name(model_path))
         error = None
         test_exported_path = os.path.join(self.mmdetection_dir, 'tools',
                                           'deployment', 'openvino_workarounds',
                                           'tests', 'test_exported.py')
-        with open(log_file, 'w') as log_f:
+        with open(output_file, 'w') as log_f:
             try:
                 run([
                     'python', test_exported_path, config_path, model_path,
@@ -254,7 +261,7 @@ class OpenvinoModelsTestCase(unittest.TestCase):
                     sys.getfilesystemencoding())
             if error is not None:
                 raise RuntimeError(error)
-        return log_file
+        return output_file
 
     def check_metrics_are_close(self, current_outputs, expected_outputs,
                                 metrics, threshold):
@@ -276,14 +283,14 @@ class OpenvinoModelsTestCase(unittest.TestCase):
                               config_path,
                               model_path,
                               metrics=('bbox', )):
-        log_file = self.run_test_exported(config_path, model_path, metrics)
+        results_file = self.run_test_exported(config_path, model_path, metrics)
 
         expected_output_file = osp.join(
             os.path.dirname(__file__), 'expected_outputs', 'public',
             f'{model_name}-10.json')
         thr = 0.02
-        self.check_metrics_are_close(log_file, expected_output_file, metrics,
-                                     thr)
+        self.check_metrics_are_close(results_file, expected_output_file,
+                                     metrics, thr)
 
     def run_export_test(self,
                         model_name,
@@ -293,12 +300,13 @@ class OpenvinoModelsTestCase(unittest.TestCase):
                         cfg_options=None,
                         metrics=('bbox', )):
         print(f'\t{model_name}, opset {opset_version}')
-        config_path = self.prerun(config_path,
-                                  self.get_output_path(model_name),
-                                  cfg_options)
+        log_file, config_path = self.prerun(config_path,
+                                            self.get_output_path(model_name),
+                                            cfg_options)
 
         output_folder = self.run_export(model_name, config_path,
-                                        checkpoint_url, opset_version)
+                                        checkpoint_url, opset_version,
+                                        log_file)
         onnx_openmmlab_model_path = osp.join(output_folder,
                                              self.config_name + '.onnx')
         openvino_model_path = osp.join(output_folder,

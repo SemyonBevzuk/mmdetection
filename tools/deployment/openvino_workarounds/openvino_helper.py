@@ -52,6 +52,7 @@ class OpenvinoExportHelper():
             patch.apply_patch()
             text = name.replace(pattern, '')
             print(f'Patch {text} applied')
+        print()
 
     @staticmethod
     def rename_input_onnx(onnx_model_path, old_name, new_name):
@@ -90,6 +91,7 @@ class OpenvinoExportHelper():
             else:
                 function()
                 print(f'Fix {fix_name} applied.')
+        print()
 
     @staticmethod
     def apply_fixes(skip_fixes=[]):
